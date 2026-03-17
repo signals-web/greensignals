@@ -218,6 +218,43 @@
     transition: background .15s;
   }
   .popup-review-btn:hover { background: rgba(207,184,124,.2); }
+
+  /* ── LIGHT MODE ── */
+  html.light {
+    --cu-gold: #9A7B2A;
+    --cu-black: #F5F4F0;
+    --cu-dark: #FFFFFF;
+    --cu-mid: #EDEBE6;
+    --cu-border: #D1CEC6;
+    --cu-muted: #6C6C70;
+    --cu-white: #1C1C1E;
+    --approve: #1A7F37;
+    --approve-bg: #D4EDDA;
+    --flag: #C0392B;
+    --flag-bg: #FAD7D5;
+    --edit: #7A5800;
+    --edit-bg: #FFF0C0;
+  }
+  html.light .sidebar { background: #F0EEE9; }
+  html.light .sign-list-item:hover { background: #E5E2DA; }
+  html.light .sign-card { background: #FFFFFF; }
+  html.light .edit-input { background: #F5F4F0; }
+  html.light .notes-area textarea { background: #F5F4F0; }
+  html.light .drop-zone { border-color: #D1CEC6; }
+  html.light #load-screen { background: #F5F4F0; }
+  html.light .leaflet-tile-pane { filter: grayscale(.2) brightness(1) contrast(1); }
+  html.light .map-legend { background: rgba(245,244,240,.95); }
+  html.light .map-stats { background: rgba(245,244,240,.95); }
+
+  /* theme toggle button */
+  .theme-toggle {
+    background: transparent; border: 1px solid var(--cu-border);
+    border-radius: 4px; color: var(--cu-muted); cursor: pointer;
+    font-size: 14px; padding: 4px 8px; transition: all .15s;
+    line-height: 1;
+  }
+  .theme-toggle:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
+
 </style>
 </head>
 <body>
@@ -243,9 +280,12 @@
 
 <div id="app">
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-brand">CU Boulder Wayfinding</div>
-      <div class="sidebar-title">Messaging Review</div>
+    <div class="sidebar-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="sidebar-brand">CU Boulder Wayfinding</div>
+        <div class="sidebar-title">Messaging Review</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Toggle light/dark mode">☀</button>
     </div>
     <div class="progress-wrap">
       <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
@@ -268,7 +308,8 @@
     <div class="sign-list" id="sign-list"></div>
     <div class="sidebar-footer">
       <button class="export-btn" id="map-toggle-btn" onclick="toggleMapView()" style="margin-bottom:6px">Map overview</button>
-      <button class="export-btn" onclick="exportCSV()">Export reviewed signs (CSV) ↓</button>
+      <button class="export-btn" onclick="exportCSV()" style="margin-bottom:6px">Export reviewed signs (CSV) ↓</button>
+      <button class="export-btn" onclick="if(confirm('Load a new CSV? Current session will be cleared.'))clearSession()" style="color:var(--cu-muted);font-size:11px">Load new CSV</button>
     </div>
   </aside>
 
@@ -299,6 +340,64 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+
+// ── THEME ──
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  document.getElementById('theme-btn').textContent = isLight ? '☾' : '☀';
+  localStorage.setItem('cub_theme', isLight ? 'light' : 'dark');
+}
+function initTheme() {
+  const saved = localStorage.getItem('cub_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.add('light');
+    const btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = '☾';
+  }
+}
+
+// ── SESSION PERSISTENCE ──
+const SESSION_KEY = 'cub_review_session';
+
+function saveSession() {
+  try {
+    const payload = {
+      signs: state.signs,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  } catch(e) { console.warn('Session save failed:', e); }
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const payload = JSON.parse(raw);
+    if (!payload.signs || !payload.signs.length) return false;
+    // Warn if session is older than 7 days
+    const ageMs = Date.now() - (payload.savedAt || 0);
+    const ageDays = Math.floor(ageMs / 86400000);
+    state.signs = payload.signs.map(s => ({ ...s, editing: false }));
+    state.current = 0;
+    applyFilter();
+    document.getElementById('load-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    setTimeout(initMap, 300);
+    if (ageDays >= 7) {
+      setTimeout(() => alert('Note: this session is ' + ageDays + ' days old. Load a fresh CSV if the data has changed.'), 1000);
+    }
+    return true;
+  } catch(e) {
+    console.warn('Session restore failed:', e);
+    return false;
+  }
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
 
 // ── ARROW SVG PATH (points right, rotate for direction) ──
 const ARROW_PATH = "M43.15816.57621c.47915-.38332.91162-.57621,1.29494-.57621s.79122.21623,1.22368.64747l41.79196,41.79319c.43247.43247.6487.8637.6487,1.29494,0,.43247-.21623.8637-.6487,1.29494l-41.79196,41.79319c-.43247.43124-.84036.64747-1.22368.64747-.47915,0-.91162-.19166-1.29494-.57498l-7.40844-7.04969c-.38332-.38332-.57498-.81456-.57498-1.29494,0-.47915.19166-.91039.57498-1.29494l27.4788-26.32761H1.79621c-1.19911,0-1.79621-.59833-1.79621-1.79867v-10.71705c0-1.19911.5971-1.79867,1.79621-1.79867h61.43232l-27.4788-26.4001c-.38332-.38332-.57498-.81456-.57498-1.29494,0-.47792.19166-.91039.57498-1.29371l7.40844-7.04969Z";
@@ -417,6 +516,7 @@ function loadData(text) {
   if (!signs.length){alert('No sign data found. Export the MESSAGING tab as CSV.');return;}
   state.signs=signs; state.current=0;
   applyFilter();
+  saveSession();
   document.getElementById('load-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   setTimeout(initMap,300);
@@ -470,7 +570,7 @@ function getCounts() {
 }
 
 // ── RENDER ──
-function render(){renderSidebar();renderMain();updateMap();}
+function render(){renderSidebar();renderMain();updateMap();saveSession();}
 
 function renderSidebar(){
   const c=getCounts();
@@ -589,7 +689,7 @@ function goTo(i){
   state.current=i; render();
   document.querySelector('.main-panel').scrollTo({top:0,behavior:'smooth'});
 }
-function approve()  {state.filtered[state.current].status='approved';render();}
+function approve()  { saveSession();state.filtered[state.current].status='approved';render();}
 function flag()     {state.filtered[state.current].status='flagged'; render();}
 function startEdit(){state.filtered[state.current].editing=true; renderMain();if(map){map.remove();map=null;mapMarker=null;}setTimeout(initMap,50);}
 function cancelEdit(){state.filtered[state.current].editing=false;render();}
@@ -739,6 +839,13 @@ function openReviewFromMap(globalIdx) {
 
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function cv(v){const s=(v||'').toString();return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`  :s;}
+
+// ── INIT ──
+initTheme();
+if (!loadSession()) {
+  // no saved session — show load screen (default state)
+}
+
 </script>
 </body>
 </html>
