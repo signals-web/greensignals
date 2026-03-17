@@ -441,7 +441,7 @@ function initMap() {
   const el=document.getElementById('sign-map');
   if(!el||map)return;
   map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
   updateMap();
 }
 function updateMap() {
@@ -668,7 +668,7 @@ function initOverviewMap() {
   if (overviewMap) { overviewMap.invalidateSize(); updateOverviewMarkers(); return; }
 
   overviewMap = L.map('overview-map', { zoomControl: true, attributionControl: false });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(overviewMap);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(overviewMap);
 
   // fit to sign bounds
   const coords = state.signs.filter(s => s.lat && s.lng).map(s => [parseFloat(s.lat), parseFloat(s.lng)]);
