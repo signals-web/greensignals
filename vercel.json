@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/CUB_SignReview_v3.html" }
+  ]
+}
