@@ -3,48 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CU Boulder — Sign Messaging Review</title>
-<meta name="description" content="Review wayfinding sign messaging for the CU Boulder campus — approve, edit, and flag sign destinations.">
+<title>Sign Messaging Review — SIGNALS Studio</title>
+<meta name="description" content="Review wayfinding sign messaging — approve, edit, and flag sign destinations.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="load-screen">
-  <div class="load-logo"><span>CU Boulder</span> Wayfinding · SIGNALS Studio</div>
+  <div class="load-logo"><span>SIGNALS</span> Studio</div>
   <div class="load-title">Sign Messaging Review</div>
-  <div class="load-subtitle">Connect to Google Sheets or load a CSV to begin</div>
-
-  <!-- Google Sheets connect -->
-  <button class="sheets-connect-btn" id="sheets-connect-btn" onclick="connectToSheets()">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M19.3 3H14V0L9 5l5 5V7h4.3c1 0 1.7.7 1.7 1.7v6.6c0 1-.7 1.7-1.7 1.7H4.7C3.7 17 3 16.3 3 15.3V8.7C3 7.7 3.7 7 4.7 7H7V3H4.7C1.6 3 0 4.7 0 7.7v8.6C0 19.3 1.6 21 4.7 21h14.6c3.1 0 4.7-1.7 4.7-4.7V7.7C24 4.7 22.4 3 19.3 3z" fill="currentColor"/>
-    </svg>
-    Connect to Google Sheets
-  </button>
-
-  <div class="load-divider">or load a CSV file</div>
-
-  <div class="drop-zone" id="drop-zone">
-    <input type="file" id="file-input" accept=".csv">
-    <div class="drop-icon">↑</div>
-    <div class="drop-label">
-      <strong>Drop CSV file here</strong><br>or click to browse<br>
-      <span style="font-size:12px;margin-top:4px;display:block">Google Sheets → File → Download → CSV</span>
-    </div>
-  </div>
-  <div class="paste-toggle" onclick="togglePaste()">Or paste CSV data directly</div>
-  <div id="paste-area">
-    <textarea id="paste-input" placeholder="Paste CSV content here..."></textarea>
-    <button class="paste-btn" onclick="loadFromPaste()">Load pasted data</button>
-  </div>
+  <div class="load-subtitle">Loading project configuration…</div>
 </div>
+
+<!-- Load screen content is replaced by config.js once project is resolved -->
+<!-- The original load UI (sheets connect, CSV drop, paste) is injected by config.js -->
 
 <div id="app">
   <aside class="sidebar">
     <div class="sidebar-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
       <div>
-        <div class="sidebar-brand">CU Boulder Wayfinding</div>
+        <div class="sidebar-brand">Wayfinding</div>
         <div class="sidebar-title">Messaging Review</div>
       </div>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Toggle light/dark mode">☀</button>
@@ -121,8 +100,9 @@
   </div>
 </div>
 
-<!-- Scripts -->
+<!-- Scripts: config MUST load first -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 <script src="firebase.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>

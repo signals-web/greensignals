@@ -15,14 +15,17 @@ const FIREBASE_CONFIG = {
 
 const FIREBASE_ENABLED = FIREBASE_CONFIG.apiKey !== "REPLACE_WITH_API_KEY";
 
-if (FIREBASE_ENABLED) {
+function _initFirebase() {
+  if (!FIREBASE_ENABLED) return;
+  const projectPath = window.PROJECT ? window.PROJECT.firebasePath : 'default';
+
   import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js').then(({ initializeApp }) => {
   import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ getDatabase, ref, push, onValue, serverTimestamp }) => {
 
     const app = initializeApp(FIREBASE_CONFIG);
     const db  = getDatabase(app);
-    const actRef = ref(db, 'activity');
-    const stateRef = ref(db, 'signState');
+    const actRef = ref(db, `projects/${projectPath}/activity`);
+    const stateRef = ref(db, `projects/${projectPath}/signState`);
 
     // ── WRITE ACTION TO FIREBASE ──
     window.fbLogAction = function(signId, action, reviewer) {
@@ -38,7 +41,7 @@ if (FIREBASE_ENABLED) {
     window.fbSyncSign = function(sign, reviewer) {
       import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ ref: dbRef, set }) => {
         const safeId = sign.id.replace(/[.#$/[\]]/g, '_');
-        set(dbRef(db, 'signState/' + safeId), {
+        set(dbRef(db, `projects/${projectPath}/signState/${safeId}`), {
           id: sign.id,
           status: sign.status,
           notes: sign.notes,
@@ -86,10 +89,17 @@ if (FIREBASE_ENABLED) {
     });
 
     window.firebaseReady = true;
-    console.log('Firebase connected');
+    console.log(`Firebase connected (project: ${projectPath})`);
 
   });
   });
+}
+
+// Wait for project config before connecting Firebase
+if (window.PROJECT_READY) {
+  _initFirebase();
+} else {
+  window.addEventListener('project-ready', () => _initFirebase(), { once: true });
 }
 
 function _timeAgo(ts) {

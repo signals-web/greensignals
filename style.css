@@ -332,3 +332,15 @@ html.light .map-stats { background: rgba(245,244,240,.95); }
 }
 .sync-toast.success { border-color: rgba(48,209,88,.3); color: var(--approve); }
 .sync-toast.error   { border-color: rgba(255,69,58,.3); color: var(--flag); }
+
+/* PROJECT PICKER */
+.project-grid { display: flex; gap: 1.5rem; margin-top: 2rem; flex-wrap: wrap; justify-content: center; }
+.project-card {
+  display: block; width: 260px; padding: 2rem; border-radius: 10px;
+  border: 1px solid var(--cu-border); background: var(--cu-dark);
+  text-decoration: none; transition: all .2s; cursor: pointer;
+  text-align: center;
+}
+.project-card:hover { background: var(--cu-mid); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.project-card-name { font-size: 20px; font-weight: 500; margin-bottom: .5rem; }
+.project-card-sub { font-size: 13px; color: var(--cu-muted); font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }

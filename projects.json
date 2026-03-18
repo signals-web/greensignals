@@ -1,0 +1,24 @@
+{
+  "cuboulder": {
+    "name": "CU Boulder",
+    "title": "CU Boulder — Sign Messaging Review",
+    "brand": "CU Boulder Wayfinding",
+    "studio": "SIGNALS Studio",
+    "accentColor": "#CFB87C",
+    "sheetId": "1tLK2OisrE9Oosc1yahWYr2-2WXo8WcwFnB9l5qP720g",
+    "sheetTab": "MESSAGING",
+    "oauthClientId": "908727177384-m29s8j6518sicn8e7n6959sip7er93tf.apps.googleusercontent.com",
+    "firebasePath": "cuboulder"
+  },
+  "harvard": {
+    "name": "Harvard University",
+    "title": "Harvard — Sign Messaging Review",
+    "brand": "Harvard Wayfinding",
+    "studio": "SIGNALS Studio",
+    "accentColor": "#A51C30",
+    "sheetId": "REPLACE_WITH_HARVARD_SHEET_ID",
+    "sheetTab": "MESSAGING",
+    "oauthClientId": "REPLACE_WITH_HARVARD_OAUTH_ID",
+    "firebasePath": "harvard"
+  }
+}

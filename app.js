@@ -17,7 +17,10 @@ function initTheme() {
 }
 
 // ── SESSION PERSISTENCE ──
-const SESSION_KEY = 'cub_review_session';
+function getSessionKey() {
+  const proj = window.PROJECT ? window.PROJECT.key : 'default';
+  return `cub_review_session_${proj}`;
+}
 
 function saveSession() {
   try {
@@ -25,13 +28,13 @@ function saveSession() {
       signs: state.signs,
       savedAt: Date.now()
     };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    localStorage.setItem(getSessionKey(), JSON.stringify(payload));
   } catch(e) { console.warn('Session save failed:', e); }
 }
 
 function loadSession() {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(getSessionKey());
     if (!raw) return false;
     const payload = JSON.parse(raw);
     if (!payload.signs || !payload.signs.length) return false;
@@ -54,7 +57,7 @@ function loadSession() {
 }
 
 function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(getSessionKey());
   location.reload();
 }
 
@@ -235,20 +238,9 @@ function loadFromSheets(rows) {
   setTimeout(initMap, 300);
 }
 
-document.getElementById('file-input').addEventListener('change',e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>loadData(ev.target.result);r.readAsText(f);
-});
-const dz=document.getElementById('drop-zone');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-dz.addEventListener('drop',e=>{
-  e.preventDefault();dz.classList.remove('drag-over');
-  const f=e.dataTransfer.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>loadData(ev.target.result);r.readAsText(f);
-});
-function togglePaste(){const el=document.getElementById('paste-area');el.style.display=el.style.display==='block'?'none':'block';}
-function loadFromPaste(){loadData(document.getElementById('paste-input').value);}
+// File input and drag/drop listeners are attached by config.js after injecting the load screen UI
+function togglePaste(){const el=document.getElementById('paste-area');if(el) el.style.display=el.style.display==='block'?'none':'block';}
+function loadFromPaste(){const el=document.getElementById('paste-input'); if(el) loadData(el.value);}
 
 // ── MAP ──
 function initMap() {

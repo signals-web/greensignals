@@ -1,12 +1,11 @@
 // ── greensignals · sheets.js ──
 // Google Sheets API integration via Google Identity Services (GIS) OAuth
 
-// ── CONFIG ──
-// IMPORTANT: Replace this with your actual OAuth Client ID from Google Cloud Console
-const SHEETS_CLIENT_ID = '908727177384-m29s8j6518sicn8e7n6959sip7er93tf.apps.googleusercontent.com';
+// ── CONFIG (loaded from window.PROJECT) ──
 const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
-const SHEET_ID = '1tLK2OisrE9Oosc1yahWYr2-2WXo8WcwFnB9l5qP720g';
-const SHEET_TAB = 'MESSAGING';
+function getSheetsClientId() { return window.PROJECT ? window.PROJECT.oauthClientId : ''; }
+function getSheetId() { return window.PROJECT ? window.PROJECT.sheetId : ''; }
+function getSheetTab() { return window.PROJECT ? window.PROJECT.sheetTab : 'MESSAGING'; }
 
 // Column indices (0-based) in the Sheet
 const COL = {
@@ -41,8 +40,9 @@ let sheetsInitialized = false;
 
 // ── INIT ──
 function initSheetsAuth() {
-  if (SHEETS_CLIENT_ID === 'REPLACE_WITH_YOUR_CLIENT_ID.apps.googleusercontent.com') {
-    console.warn('Google Sheets: Client ID not configured. Sheets integration disabled.');
+  const clientId = getSheetsClientId();
+  if (!clientId || clientId.startsWith('REPLACE_WITH')) {
+    console.warn('Google Sheets: Client ID not configured for this project. Sheets integration disabled.');
     const btn = document.getElementById('sheets-connect-btn');
     if (btn) {
       btn.style.opacity = '0.4';
@@ -54,19 +54,18 @@ function initSheetsAuth() {
 
   // Wait for GIS library to load
   if (typeof google === 'undefined' || !google.accounts) {
-    // GIS not loaded yet — retry
     setTimeout(initSheetsAuth, 200);
     return;
   }
 
   tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: SHEETS_CLIENT_ID,
+    client_id: clientId,
     scope: SHEETS_SCOPE,
     callback: handleTokenResponse,
   });
 
   sheetsInitialized = true;
-  console.log('Google Sheets auth initialized');
+  console.log('Google Sheets auth initialized for project:', window.PROJECT.key);
 }
 
 function handleTokenResponse(response) {
@@ -119,8 +118,10 @@ async function fetchSheetData() {
   if (!accessToken) return;
 
   try {
-    const range = `${SHEET_TAB}!A:AO`;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}`;
+    const sheetTab = getSheetTab();
+    const sheetId = getSheetId();
+    const range = `${sheetTab}!A:AO`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}`;
 
     const resp = await fetch(url, {
       headers: { 'Authorization': 'Bearer ' + accessToken }
@@ -149,7 +150,7 @@ async function fetchSheetData() {
       return;
     }
 
-    console.log(`Sheets: loaded ${rows.length - 1} rows from ${SHEET_TAB}`);
+    console.log(`Sheets: loaded ${rows.length - 1} rows from ${getSheetTab()}`);
 
     // Use the app's loadFromSheets function
     loadFromSheets(rows);
@@ -182,25 +183,25 @@ async function sheetsWriteBack(sign) {
 
   // Status column
   updates.push({
-    range: `${SHEET_TAB}!${colLetter(COL.STATUS)}${row}`,
+    range: `${getSheetTab()}!${colLetter(COL.STATUS)}${row}`,
     values: [[sign.status.charAt(0).toUpperCase() + sign.status.slice(1)]]
   });
 
   // Notes column
   updates.push({
-    range: `${SHEET_TAB}!${colLetter(COL.NOTES)}${row}`,
+    range: `${getSheetTab()}!${colLetter(COL.NOTES)}${row}`,
     values: [[sign.notes || '']]
   });
 
   // Last Updated column
   updates.push({
-    range: `${SHEET_TAB}!${colLetter(COL.LAST_UPDATED)}${row}`,
+    range: `${getSheetTab()}!${colLetter(COL.LAST_UPDATED)}${row}`,
     values: [[dateStr]]
   });
 
   // Reviewed By column
   updates.push({
-    range: `${SHEET_TAB}!${colLetter(COL.REVIEWED_BY)}${row}`,
+    range: `${getSheetTab()}!${colLetter(COL.REVIEWED_BY)}${row}`,
     values: [[reviewer]]
   });
 
@@ -213,28 +214,28 @@ async function sheetsWriteBack(sign) {
       // Arrow column
       const arrowVal = d ? degToSymbol(d.deg) : '';
       updates.push({
-        range: `${SHEET_TAB}!${colLetter(baseCol)}${row}`,
+        range: `${getSheetTab()}!${colLetter(baseCol)}${row}`,
         values: [[arrowVal]]
       });
 
       // Override column (baseCol + 2)
       const overVal = d ? d.name : '';
       updates.push({
-        range: `${SHEET_TAB}!${colLetter(baseCol + 2)}${row}`,
+        range: `${getSheetTab()}!${colLetter(baseCol + 2)}${row}`,
         values: [[overVal]]
       });
 
       // ttd column (baseCol + 3)
       const ttdVal = d ? d.ttd : '';
       updates.push({
-        range: `${SHEET_TAB}!${colLetter(baseCol + 3)}${row}`,
+        range: `${getSheetTab()}!${colLetter(baseCol + 3)}${row}`,
         values: [[ttdVal]]
       });
     }
   }
 
   try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchUpdate`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${getSheetId()}/values:batchUpdate`;
     const resp = await fetch(url, {
       method: 'POST',
       headers: {
@@ -308,9 +309,16 @@ function showSyncToast(message, type) {
 }
 
 // ── INITIALIZE ON LOAD ──
-// Wait for GIS script to load, then initialize
+// Wait for project config to be ready, then init Sheets auth
+function _initSheetsWhenReady() {
+  if (window.PROJECT_READY) {
+    initSheetsAuth();
+  } else {
+    window.addEventListener('project-ready', () => initSheetsAuth(), { once: true });
+  }
+}
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => setTimeout(initSheetsAuth, 100));
+  document.addEventListener('DOMContentLoaded', () => setTimeout(_initSheetsWhenReady, 100));
 } else {
-  setTimeout(initSheetsAuth, 100);
+  setTimeout(_initSheetsWhenReady, 100);
 }
