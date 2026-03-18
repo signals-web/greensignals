@@ -109,17 +109,22 @@ function arrowPickerHTML(currentDeg, rowIdx) {
 
 // ── SIGN TYPE ICONS (inline SVG) ──
 const TYPE_ICONS = {
+  // CU Boulder types
   N: `<svg viewBox="0 0 25 25" xmlns="http://www.w3.org/2000/svg"><polygon points="12.5 16.8 4.81 24.49 0.51 20.2 8.21 12.5 0.51 4.81 4.81 0.51 12.5 8.21 20.2 0.51 24.49 4.81 16.8 12.5 24.49 20.2 20.2 24.49 12.5 16.8" fill="#0b3858"/><path d="M20.2,1l3.79,3.79-7.69,7.69,7.69,7.69-3.79,3.79-7.69-7.69-7.69,7.69L1.03,20.2l7.69-7.69L1.03,4.81,4.81,1.03l7.69,7.69L20.2,1M20.2.77l-.13.13-7.57,7.57L4.94.9l-.13-.13-.13.13L.91,4.69l-.13.13.13.13,7.57,7.57L.91,20.07l-.13.13.13.13,3.79,3.79.13.13.13-.13,7.57-7.57,7.57,7.57.13.13.13-.13,3.79-3.79.13-.13-.13-.13-7.57-7.57,7.57-7.57.13-.13-.13-.13L20.33.9l-.13-.13Z" fill="#fff"/></svg>`,
   SD:`<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M14,26.56c-6.92,0-12.56-5.63-12.56-12.56S7.08,1.45,14,1.45s12.56,5.63,12.56,12.56-5.63,12.56-12.56,12.56Z" fill="#365daa"/><path d="M14,2.9c6.13,0,11.11,4.97,11.11,11.11s-4.97,11.11-11.11,11.11S2.9,20.14,2.9,14,7.87,2.9,14,2.9M14,0C6.28,0,0,6.28,0,14s6.28,14,14,14,14-6.28,14-14S21.72,0,14,0Z" fill="#0b3858"/><circle cx="14" cy="14" r="11.11" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="1.45"/></svg>`,
   M: `<svg viewBox="0 0 29.3 29.3" xmlns="http://www.w3.org/2000/svg"><polygon points="11.42 28.74 11.42 17.86 0.54 17.86 0.54 11.42 11.42 11.42 11.42 0.54 17.86 0.54 17.86 11.42 28.74 11.42 28.74 17.86 17.86 17.86 17.86 28.74 11.42 28.74" fill="#e8c365"/><path d="M11.97,1.09h5.35v10.88h10.88v5.35s-10.88,0-10.88,0v10.88h-5.35v-10.88H1.09v-5.35s10.88,0,10.88,0V1.09M10.88,0v10.88H0v1.09s0,5.35,0,5.35v1.09h10.88v10.88h1.09s5.35,0,5.35,0h1.09s0-1.09,0-1.09v-9.79h10.88v-1.09s0-5.35,0-5.35v-1.09h-10.88V0h-1.09S11.97,0,11.97,0h-1.09Z"/></svg>`,
-  PM:`<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M14,26.56c-6.92,0-12.56-5.63-12.56-12.56S7.08,1.45,14,1.45s12.56,5.63,12.56,12.56-5.63,12.56-12.56,12.56Z" fill="#fff"/><path d="M14,2.9c6.13,0,11.11,4.97,11.11,11.11s-4.97,11.11-11.11,11.11S2.9,20.14,2.9,14,7.87,2.9,14,2.9M14,0C6.28,0,0,6.28,0,14s6.28,14,14,14,14-6.28,14-14S21.72,0,14,0Z" fill="#0b3858"/><circle cx="14" cy="14" r="11.11" fill="none" stroke="#0670ae" stroke-miterlimit="10" stroke-width="1.45"/></svg>`
+  PM:`<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M14,26.56c-6.92,0-12.56-5.63-12.56-12.56S7.08,1.45,14,1.45s12.56,5.63,12.56,12.56-5.63,12.56-12.56,12.56Z" fill="#fff"/><path d="M14,2.9c6.13,0,11.11,4.97,11.11,11.11s-4.97,11.11-11.11,11.11S2.9,20.14,2.9,14,7.87,2.9,14,2.9M14,0C6.28,0,0,6.28,0,14s6.28,14,14,14,14-6.28,14-14S21.72,0,14,0Z" fill="#0b3858"/><circle cx="14" cy="14" r="11.11" fill="none" stroke="#0670ae" stroke-miterlimit="10" stroke-width="1.45"/></svg>`,
+  // Harvard types — triangles matching SignAgent colors
+  A: `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><polygon points="14,2 26,24 2,24" fill="#D32F2F" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  B: `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><polygon points="14,2 26,24 2,24" fill="none" stroke="#EF8C1A" stroke-width="2.5" stroke-linejoin="round"/></svg>`,
+  C: `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><polygon points="14,2 26,24 2,24" fill="#2E7D32" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>`
 };
 // Default icon for unknown sign types — simple filled circle with accent color
 const DEFAULT_ICON = `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="currentColor" stroke="#fff" stroke-width="1.5"/></svg>`;
 
 function getTypeIcon(type) { return TYPE_ICONS[type] || DEFAULT_ICON; }
 
-const TYPE_LABELS = { N:'Nudge', SD:'Secondary Directional', M:'Main', PM:'Primary Main' };
+const TYPE_LABELS = { N:'Nudge', SD:'Secondary Directional', M:'Main', PM:'Primary Main', A:'Primary', B:'Secondary', C:'Tertiary' };
 
 // ── STATE ──
 const state = { signs:[], current:0, filtered:[], filter:'' };
