@@ -22,14 +22,14 @@
 
   // ── No project param → show project picker ──
   if (!projectKey) {
-    showProjectPicker(projects);
+    showProjectPicker();
     return;
   }
 
   // ── Invalid project key ──
   const config = projects[projectKey];
   if (!config) {
-    showProjectError(`Project "${projectKey}" not found. Check your URL.`, projects);
+    showProjectError(`Project "${projectKey}" not found. Check your URL.`);
     return;
   }
 
@@ -117,45 +117,32 @@
 
 })();
 
-// ── PROJECT PICKER SCREEN ──
-function showProjectPicker(projects) {
+// ── MISSING PROJECT SCREEN ──
+function showProjectPicker() {
   const screen = document.getElementById('load-screen');
   if (!screen) return;
 
-  const keys = Object.keys(projects);
-  const cards = keys.map(key => {
-    const p = projects[key];
-    return `<a class="project-card" href="?project=${key}" style="border-color:${p.accentColor}">
-      <div class="project-card-name" style="color:${p.accentColor}">${p.name}</div>
-      <div class="project-card-sub">Sign Messaging Review</div>
-    </a>`;
-  }).join('');
-
   screen.innerHTML = `
     <div class="load-logo">SIGNALS Studio</div>
-    <div class="load-title">Select a project</div>
-    <div class="load-subtitle">Choose which project to review</div>
-    <div class="project-grid">${cards}</div>
+    <div class="load-title">Sign Messaging Review</div>
+    <div class="load-subtitle">Use the project link provided by your team to get started.</div>
+    <div style="margin-top:2rem;font-size:13px;color:var(--cu-muted)">
+      If you don't have a link, contact your SIGNALS project manager.
+    </div>
   `;
 }
 
 // ── ERROR SCREEN ──
-function showProjectError(message, projects) {
+function showProjectError(message) {
   const screen = document.getElementById('load-screen');
   if (!screen) return;
-
-  let extra = '';
-  if (projects) {
-    const keys = Object.keys(projects);
-    extra = `<div style="margin-top:2rem;font-size:13px;color:var(--cu-muted)">Available projects:
-      ${keys.map(k => `<a href="?project=${k}" style="color:var(--cu-gold);margin-left:8px">${k}</a>`).join('')}
-    </div>`;
-  }
 
   screen.innerHTML = `
     <div class="load-logo">SIGNALS Studio</div>
     <div class="load-title" style="color:#FF453A">Configuration Error</div>
     <div class="load-subtitle">${message}</div>
-    ${extra}
+    <div style="margin-top:2rem;font-size:13px;color:var(--cu-muted)">
+      Please check your URL or contact your SIGNALS project manager.
+    </div>
   `;
 }
