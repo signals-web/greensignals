@@ -2,18 +2,10 @@
 // Firebase Realtime Database: multi-user sync, activity feed, reviewer identity
 
 // ── FIREBASE CONFIG ──
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBUWBhlnn1iwye70kShElmTWEWp4tnTeh4",
-  authDomain: "cub-sign-review.firebaseapp.com",
-  databaseURL: "https://cub-sign-review-default-rtdb.firebaseio.com",
-  projectId: "cub-sign-review",
-  storageBucket: "cub-sign-review.firebasestorage.app",
-  messagingSenderId: "976882846160",
-  appId: "1:976882846160:web:6fec6b49b9e034c06cd1d5",
-  measurementId: "G-J4BLX4N28W"
-};
+// Loaded from env.js (gitignored) — see env.example.js for template
+const FIREBASE_CONFIG = window.__ENV__?.FIREBASE_CONFIG || {};
 
-const FIREBASE_ENABLED = FIREBASE_CONFIG.apiKey !== "REPLACE_WITH_API_KEY";
+const FIREBASE_ENABLED = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "REPLACE_WITH_API_KEY";
 
 function _initFirebase() {
   if (!FIREBASE_ENABLED) return;
