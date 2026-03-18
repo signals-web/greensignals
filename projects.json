@@ -16,9 +16,9 @@
     "brand": "Harvard Wayfinding",
     "studio": "SIGNALS Studio",
     "accentColor": "#A51C30",
-    "sheetId": "REPLACE_WITH_HARVARD_SHEET_ID",
+    "sheetId": "1ncf70jlKg322Y6Fff57dnIqZCrBsiP2omkbM1lIMRnM",
     "sheetTab": "MESSAGING",
-    "oauthClientId": "REPLACE_WITH_HARVARD_OAUTH_ID",
+    "oauthClientId": "908727177384-m29s8j6518sicn8e7n6959sip7er93tf.apps.googleusercontent.com",
     "firebasePath": "harvard"
   }
 }
