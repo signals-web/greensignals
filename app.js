@@ -114,6 +114,10 @@ const TYPE_ICONS = {
   M: `<svg viewBox="0 0 29.3 29.3" xmlns="http://www.w3.org/2000/svg"><polygon points="11.42 28.74 11.42 17.86 0.54 17.86 0.54 11.42 11.42 11.42 11.42 0.54 17.86 0.54 17.86 11.42 28.74 11.42 28.74 17.86 17.86 17.86 17.86 28.74 11.42 28.74" fill="#e8c365"/><path d="M11.97,1.09h5.35v10.88h10.88v5.35s-10.88,0-10.88,0v10.88h-5.35v-10.88H1.09v-5.35s10.88,0,10.88,0V1.09M10.88,0v10.88H0v1.09s0,5.35,0,5.35v1.09h10.88v10.88h1.09s5.35,0,5.35,0h1.09s0-1.09,0-1.09v-9.79h10.88v-1.09s0-5.35,0-5.35v-1.09h-10.88V0h-1.09S11.97,0,11.97,0h-1.09Z"/></svg>`,
   PM:`<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M14,26.56c-6.92,0-12.56-5.63-12.56-12.56S7.08,1.45,14,1.45s12.56,5.63,12.56,12.56-5.63,12.56-12.56,12.56Z" fill="#fff"/><path d="M14,2.9c6.13,0,11.11,4.97,11.11,11.11s-4.97,11.11-11.11,11.11S2.9,20.14,2.9,14,7.87,2.9,14,2.9M14,0C6.28,0,0,6.28,0,14s6.28,14,14,14,14-6.28,14-14S21.72,0,14,0Z" fill="#0b3858"/><circle cx="14" cy="14" r="11.11" fill="none" stroke="#0670ae" stroke-miterlimit="10" stroke-width="1.45"/></svg>`
 };
+// Default icon for unknown sign types — simple filled circle with accent color
+const DEFAULT_ICON = `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="currentColor" stroke="#fff" stroke-width="1.5"/></svg>`;
+
+function getTypeIcon(type) { return TYPE_ICONS[type] || DEFAULT_ICON; }
 
 const TYPE_LABELS = { N:'Nudge', SD:'Secondary Directional', M:'Main', PM:'Primary Main' };
 
@@ -254,7 +258,7 @@ function updateMap() {
   if(!map)return;
   const s=state.filtered[state.current];if(!s)return;
   const lat=parseFloat(s.lat),lng=parseFloat(s.lng);if(isNaN(lat)||isNaN(lng))return;
-  const svgContent = TYPE_ICONS[s.type] || '';
+  const svgContent = getTypeIcon(s.type);
   const iconHtml = `<div style="width:14px;height:14px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8));">${svgContent}</div>`;
   const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
   if(mapMarker)map.removeLayer(mapMarker);
@@ -287,7 +291,7 @@ function renderSidebar(){
   document.getElementById('progress-fill').style.width=(c.total?Math.round(c.reviewed/c.total*100):0)+'%';
   document.getElementById('sign-list').innerHTML=state.filtered.map((s,i)=>`
     <div class="sign-item${i===state.current?' active':''}" onclick="goTo(${i})">
-      <div class="sign-icon">${TYPE_ICONS[s.type]||''}</div>
+      <div class="sign-icon">${getTypeIcon(s.type)}</div>
       <span class="sign-item-id">${s.id}</span>
       <span class="sign-item-nbhd">${s.nbhd.replace('Main Campus','Main').replace('Williams Village','WV').replace('East Campus','East')}</span>
       <span class="status-dot dot-${s.status}"></span>
@@ -514,7 +518,7 @@ function updateOverviewMarkers() {
     const ringColor = s.status==='approved'?'#30D158':s.status==='edited'?'#FFD60A':s.status==='flagged'?'#FF453A':'transparent';
     const ringStyle = ringColor !== 'transparent' ? `box-shadow:0 0 0 2px ${ringColor};border-radius:50%;` : '';
 
-    const iconHtml = `<div style="width:18px;height:18px;${ringStyle}filter:drop-shadow(0 1px 4px rgba(0,0,0,.9));">${TYPE_ICONS[s.type]||''}</div>`;
+    const iconHtml = `<div style="width:18px;height:18px;${ringStyle}filter:drop-shadow(0 1px 4px rgba(0,0,0,.9));">${getTypeIcon(s.type)}</div>`;
     const icon = L.divIcon({ html: iconHtml, iconSize:[18,18], iconAnchor:[9,9], className:'' });
 
     const destList = s.dests.slice(0,4).map(d => `<div>${escHtml(d.name)}</div>`).join('');
