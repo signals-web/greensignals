@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CU Boulder — Sign Messaging Review</title>
+<meta name="description" content="Review wayfinding sign messaging for the CU Boulder campus — approve, edit, and flag sign destinations.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="load-screen">
+  <div class="load-logo"><span>CU Boulder</span> Wayfinding · SIGNALS Studio</div>
+  <div class="load-title">Sign Messaging Review</div>
+  <div class="load-subtitle">Connect to Google Sheets or load a CSV to begin</div>
+
+  <!-- Google Sheets connect -->
+  <button class="sheets-connect-btn" id="sheets-connect-btn" onclick="connectToSheets()">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19.3 3H14V0L9 5l5 5V7h4.3c1 0 1.7.7 1.7 1.7v6.6c0 1-.7 1.7-1.7 1.7H4.7C3.7 17 3 16.3 3 15.3V8.7C3 7.7 3.7 7 4.7 7H7V3H4.7C1.6 3 0 4.7 0 7.7v8.6C0 19.3 1.6 21 4.7 21h14.6c3.1 0 4.7-1.7 4.7-4.7V7.7C24 4.7 22.4 3 19.3 3z" fill="currentColor"/>
+    </svg>
+    Connect to Google Sheets
+  </button>
+
+  <div class="load-divider">or load a CSV file</div>
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".csv">
+    <div class="drop-icon">↑</div>
+    <div class="drop-label">
+      <strong>Drop CSV file here</strong><br>or click to browse<br>
+      <span style="font-size:12px;margin-top:4px;display:block">Google Sheets → File → Download → CSV</span>
+    </div>
+  </div>
+  <div class="paste-toggle" onclick="togglePaste()">Or paste CSV data directly</div>
+  <div id="paste-area">
+    <textarea id="paste-input" placeholder="Paste CSV content here..."></textarea>
+    <button class="paste-btn" onclick="loadFromPaste()">Load pasted data</button>
+  </div>
+</div>
+
+<div id="app">
+  <aside class="sidebar">
+    <div class="sidebar-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+      <div>
+        <div class="sidebar-brand">CU Boulder Wayfinding</div>
+        <div class="sidebar-title">Messaging Review</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" title="Toggle light/dark mode">☀</button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      <div class="progress-stats">
+        <span class="stat-pill pill-approved" id="stat-approved">0 approved</span>
+        <span class="stat-pill pill-edited"   id="stat-edited">0 edited</span>
+        <span class="stat-pill pill-flagged"  id="stat-flagged">0 flagged</span>
+        <span class="stat-pill pill-pending"  id="stat-pending">0 pending</span>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <select id="type-filter" onchange="applyFilter()">
+        <option value="">All sign types</option>
+        <option value="N">N — Nudge</option>
+        <option value="SD">SD — Secondary Directional</option>
+        <option value="M">M — Main</option>
+        <option value="PM">PM — Primary Main</option>
+      </select>
+    </div>
+    <div class="sign-list" id="sign-list"></div>
+    <div class="activity-feed" id="activity-feed">
+      <div class="activity-header" onclick="toggleActivityFeed()">
+        <span class="activity-header-label">Activity</span>
+        <span class="activity-toggle" id="activity-toggle">▲</span>
+      </div>
+      <div class="activity-list" id="activity-list"></div>
+    </div>
+    <div class="sidebar-footer">
+      <div style="margin-bottom:8px">
+        <span class="reviewer-chip" onclick="promptUserName()" id="reviewer-chip">Set your name</span>
+        <span class="sheets-status" id="sheets-status" style="display:none"></span>
+      </div>
+      <button class="export-btn" id="map-toggle-btn" onclick="toggleMapView()" style="margin-bottom:6px">Map overview</button>
+      <button class="export-btn" onclick="exportCSV()" style="margin-bottom:6px">Export reviewed signs (CSV) ↓</button>
+      <button class="export-btn" onclick="if(confirm('Load a new CSV? Current session will be cleared.'))clearSession()" style="color:var(--cu-muted);font-size:11px">Load new CSV</button>
+    </div>
+  </aside>
+
+  <main class="main-panel" id="main-panel">
+    <div class="panel-inner">
+      <div class="sign-nav">
+        <button class="nav-arrow" id="btn-prev" onclick="goTo(state.current-1)">←</button>
+        <span class="nav-counter" id="nav-counter">1 of 1</span>
+        <div class="nav-dots" id="nav-dots"></div>
+        <button class="nav-arrow" id="btn-next-nav" onclick="goTo(state.current+1)">→</button>
+      </div>
+      <div id="sign-view"></div>
+    </div>
+  </main>
+
+  <div id="map-overview" class="main-panel">
+    <div class="map-stats" id="map-stats"></div>
+    <div id="overview-map"></div>
+    <div class="map-legend">
+      <div class="legend-title">Sign types</div>
+      <div class="legend-item"><svg viewBox="0 0 25 25" xmlns="http://www.w3.org/2000/svg"><polygon points="12.5 16.8 4.81 24.49 0.51 20.2 8.21 12.5 0.51 4.81 4.81 0.51 12.5 8.21 20.2 0.51 24.49 4.81 16.8 12.5 24.49 20.2 20.2 24.49 12.5 16.8" fill="#0b3858"/></svg> Nudge (N)</div>
+      <div class="legend-item"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13.5" fill="#365daa" stroke="#0b3858" stroke-width="1"/><circle cx="14" cy="14" r="11" fill="none" stroke="#fff" stroke-width="1.4"/></svg> Secondary Dir. (SD)</div>
+      <div class="legend-item"><svg viewBox="0 0 29.3 29.3" xmlns="http://www.w3.org/2000/svg"><polygon points="11.42 28.74 11.42 17.86 0.54 17.86 0.54 11.42 11.42 11.42 11.42 0.54 17.86 0.54 17.86 11.42 28.74 11.42 28.74 17.86 17.86 17.86 17.86 28.74 11.42 28.74" fill="#e8c365"/></svg> Main (M)</div>
+      <div class="legend-item"><svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13.5" fill="#fff" stroke="#0b3858" stroke-width="1"/><circle cx="14" cy="14" r="11" fill="none" stroke="#0670ae" stroke-width="1.4"/></svg> Primary Main (PM)</div>
+    </div>
+  </div>
+</div>
+
+<!-- User Name Prompt overlay -->
+<div id="user-prompt-overlay" class="user-prompt-overlay" style="display:none">
+  <div class="user-prompt-card">
+    <div class="user-prompt-title">Who are you?</div>
+    <div class="user-prompt-sub">Your name will appear on all approvals, edits, and flags so the whole team can see who reviewed what.</div>
+    <input class="user-prompt-input" id="user-name-input" placeholder="Your name" maxlength="40" onkeydown="if(event.key==='Enter')saveUserName()">
+    <button class="user-prompt-btn" onclick="saveUserName()">Start reviewing</button>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+<script src="firebase.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="sheets.js"></script>
+
+</body>
+</html>

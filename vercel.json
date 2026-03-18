@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/CUB_SignReview.html" }
+    { "source": "/", "destination": "/index.html" }
   ]
 }
