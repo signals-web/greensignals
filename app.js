@@ -281,9 +281,12 @@ function loadFromPaste(){const el=document.getElementById('paste-input'); if(el)
 function initMap() {
   const el=document.getElementById('sign-map');
   if(!el||map)return;
-  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false});
+  const s=state.filtered[state.current];
+  const lat=s?parseFloat(s.lat):40.0;
+  const lng=s?parseFloat(s.lng):-105.27;
+  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  updateMap();
+  setTimeout(function(){map.invalidateSize();updateMap();},100);
 }
 function updateMap() {
   if(!map)return;
@@ -539,7 +542,7 @@ function renderMain(){
 
   document.getElementById('sign-view').innerHTML=html;
   if(map){map.remove();map=null;mapMarker=null;}
-  setTimeout(initMap,50);
+  setTimeout(initMap,200);
 }
 
 // ── ACTIONS ──
