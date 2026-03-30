@@ -406,11 +406,22 @@ function updateMap() {
     headerEl.appendChild(zoomWrap);
   }
 
+  // Center on sign, zoom to fit furthest destination
   map.invalidateSize();
-  if(hasDests) { map.fitBounds(bounds.pad(0.25)); } else { map.setView([lat,lng],17); }
+  var zoom = 17;
+  if (hasDests) {
+    // Find zoom that shows all destinations while staying centered on sign
+    map.setView([lat,lng], 19);
+    for (var z=18; z>=13; z--) {
+      map.setZoom(z);
+      if (map.getBounds().contains(bounds)) break;
+    }
+    zoom = map.getZoom();
+  }
+  map.setView([lat,lng], zoom);
   setTimeout(function(){
     map.invalidateSize();
-    if(hasDests){map.fitBounds(bounds.pad(0.25));}else{map.setView([lat,lng],17);}
+    map.setView([lat,lng], zoom);
     resolveOverlaps(mapEl);
   },200);
 }
