@@ -545,8 +545,9 @@ function renderMain(){
   const frontDir = s._facing || '';
   const backDir = s._facing ? OPPOSITE_DIR[s._facing] : '';
 
-  // Screen-degree offset for arrow rotation relative to facing
-  var facingScreenOffset = s._facing ? (DIR_DEGS[s._facing] - 90 + 360) % 360 : 0;
+  // Arrow rotation offset: subtract facing compass degrees from screen degrees
+  // e.g. facing N (0°) = no change; facing E (90°) = east arrow becomes ↑
+  var facingScreenOffset = s._facing ? DIR_DEGS[s._facing] : 0;
 
   if(s.editing) {
     html+=buildDestTable(s.dests, s, true);
