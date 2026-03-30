@@ -206,8 +206,18 @@ function _createTab(ss, name, headers) {
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
+  } else if (sheet.getLastRow() > 1) {
+    // Tab exists and has data — only update header row, never clear data
+    var range = sheet.getRange(1, 1, 1, headers[0].length);
+    range.setValues(headers);
+    range.setBackground(COLORS.header);
+    range.setFontColor(COLORS.headerFg);
+    range.setFontWeight("bold");
+    range.setFontSize(9);
+    sheet.setFrozenRows(1);
+    return sheet;
   } else {
-    sheet.clearContents();
+    // Tab exists but is empty — safe to clear formats
     sheet.clearFormats();
   }
   var range = sheet.getRange(1, 1, 1, headers[0].length);
@@ -503,6 +513,10 @@ function generateMessaging() {
   var msgSheet   = ss.getSheetByName(TABS.MESSAGING);
   var distSheet  = ss.getSheetByName(TABS.DISTANCES);
 
+  if (!signsSheet) { SpreadsheetApp.getUi().alert("SIGNS tab not found. Run Setup first."); return; }
+  if (!destsSheet) { SpreadsheetApp.getUi().alert("DESTINATIONS tab not found. Run Setup first."); return; }
+  if (!msgSheet) { SpreadsheetApp.getUi().alert("MESSAGING tab not found. Run Setup first."); return; }
+
   var signsData = signsSheet.getDataRange().getValues();
   var destsData = destsSheet.getDataRange().getValues();
 
@@ -704,6 +718,9 @@ function pushToReview() {
   var msgSheet    = ss.getSheetByName(TABS.MESSAGING);
   var reviewSheet = ss.getSheetByName(TABS.REVIEW);
 
+  if (!msgSheet) { SpreadsheetApp.getUi().alert("MESSAGING tab not found."); return; }
+  if (!reviewSheet) { SpreadsheetApp.getUi().alert("REVIEW tab not found. Run Setup first."); return; }
+
   var msgData = msgSheet.getDataRange().getValues();
   var msgCols = _buildColumnMap(msgData[0]);
   var statusIdx = msgCols["Status"];
@@ -755,6 +772,9 @@ function syncReviewToMessaging() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var reviewSheet = ss.getSheetByName(TABS.REVIEW);
   var msgSheet    = ss.getSheetByName(TABS.MESSAGING);
+
+  if (!reviewSheet) { SpreadsheetApp.getUi().alert("REVIEW tab not found."); return; }
+  if (!msgSheet) { SpreadsheetApp.getUi().alert("MESSAGING tab not found."); return; }
 
   var reviewData  = reviewSheet.getDataRange().getValues();
   var msgData     = msgSheet.getDataRange().getValues();
