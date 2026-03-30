@@ -125,7 +125,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .side-label.side-b { margin-top: 4px; }
 
 /* MAP DESTINATION LABELS */
-.map-dest-label { font-family: var(--font-mono); font-size: 9px; color: #CFB87C; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 6px rgba(0,0,0,0.6); pointer-events: none; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.map-dest-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: .02em; color: #fff; white-space: nowrap; pointer-events: none; background: rgba(28,28,30,0.75); padding: 1px 4px; border-radius: 2px; border: 1px solid rgba(207,184,124,0.3); }
 
 .dest-table { width: 100%; border-collapse: collapse; }
 .dest-table th { font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); padding: 10px 1.5rem; text-align: left; border-bottom: 1px solid var(--cu-border); }
