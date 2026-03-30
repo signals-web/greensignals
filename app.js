@@ -304,40 +304,30 @@ function updateMap() {
   const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
   mapMarker=L.marker([lat,lng],{icon}).addTo(map);
 
-  // Walking radius circle (meters ≈ walk minutes × 80m/min)
-  // N: ~2 min, SD: ~5 min, M: ~7 min, PM: ~10 min
-  const maxDist = {N:150, SD:400, M:560, PM:800}[s.type] || 400;
-  const radiusCircle = L.circle([lat,lng], {
-    radius: maxDist, color:'#CFB87C', fillColor:'rgba(207,184,124,0.06)',
-    weight:1.5, dashArray:'6 4', fillOpacity:1
-  }).addTo(map);
-  destMarkers.push(radiusCircle);
-
   // Destination markers with labels and connecting lines
-  const bounds = radiusCircle.getBounds();
+  var hasDests = false;
+  var bounds = L.latLngBounds([[lat,lng]]);
   s.dests.forEach(function(d) {
     if(!d.name) return;
-    const pos = estimateDestPos(lat, lng, d.deg, d.ttd);
+    var pos = estimateDestPos(lat, lng, d.deg, d.ttd);
     if(!pos) return;
-    const dlat = pos.lat, dlng = pos.lng;
+    var dlat = pos.lat, dlng = pos.lng;
+    hasDests = true;
 
-    // Connecting line
-    const line = L.polyline([[lat,lng],[dlat,dlng]], {
+    var line = L.polyline([[lat,lng],[dlat,dlng]], {
       color:'rgba(207,184,124,0.35)', weight:1.5, dashArray:'4 4'
     }).addTo(map);
     destMarkers.push(line);
 
-    // Destination dot
-    const dot = L.circleMarker([dlat,dlng], {
+    var dot = L.circleMarker([dlat,dlng], {
       radius:3, fillColor:'#CFB87C', fillOpacity:0.9,
       color:'rgba(0,0,0,0.5)', weight:1
     }).addTo(map);
     destMarkers.push(dot);
 
-    // Name label at destination
-    const label = L.marker([dlat,dlng], {
+    var label = L.marker([dlat,dlng], {
       icon: L.divIcon({
-        html: `<div class="map-dest-label">${escHtml(d.name)}</div>`,
+        html: '<div class="map-dest-label">'+escHtml(d.name)+'</div>',
         iconSize:[0,0], iconAnchor:[-8,-4], className:''
       })
     }).addTo(map);
@@ -347,8 +337,8 @@ function updateMap() {
   });
 
   map.invalidateSize();
-  map.fitBounds(bounds.pad(0.1));
-  setTimeout(function(){map.invalidateSize();map.fitBounds(bounds.pad(0.1));},150);
+  if(hasDests) { map.fitBounds(bounds.pad(0.15)); } else { map.setView([lat,lng],17); }
+  setTimeout(function(){map.invalidateSize();if(hasDests){map.fitBounds(bounds.pad(0.15));}else{map.setView([lat,lng],17);}},150);
 }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
@@ -467,33 +457,19 @@ function renderMain(){
         <div class="sign-card-type">${TYPE_LABELS[s.type]||s.type}</div>
         <div class="sign-card-nbhd">${s.nbhd}</div>
         <div class="sign-card-coords">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>
-        <div class="sign-rotation">
-          <span class="rotation-label">Facing${s._facing ? ': '+s._facing : ''}</span>
-          <div class="compass-widget" onclick="handleCompassClick(event)">
-            <svg viewBox="0 0 80 80" class="compass-svg">
-              <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(207,184,124,0.2)" stroke-width="1"/>
-              <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(207,184,124,0.1)" stroke-width="1"/>
-              ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir,i) {
-                var a = i*45*Math.PI/180;
-                var tx = 40 + 36*Math.sin(a);
-                var ty = 40 - 36*Math.cos(a);
-                var isActive = s._facing===dir;
-                var fill = isActive ? '#CFB87C' : 'rgba(207,184,124,0.4)';
-                var fs = i%2===0 ? '7' : '5.5';
-                return '<text x="'+tx+'" y="'+ty+'" text-anchor="middle" dominant-baseline="central" fill="'+fill+'" font-size="'+fs+'" font-family="monospace" style="cursor:pointer;font-weight:'+(isActive?'bold':'normal')+'">'+dir+'</text>';
-              }).join('')}
-              ${s._facing ? (function(){
-                var fi = ['N','NE','E','SE','S','SW','W','NW'].indexOf(s._facing);
-                var fa = fi*45*Math.PI/180;
-                var nx = 40 + 24*Math.sin(fa);
-                var ny = 40 - 24*Math.cos(fa);
-                return '<line x1="40" y1="40" x2="'+nx+'" y2="'+ny+'" stroke="#CFB87C" stroke-width="2" stroke-linecap="round"/>' +
-                       '<circle cx="'+nx+'" cy="'+ny+'" r="3" fill="#CFB87C"/>' +
-                       '<circle cx="40" cy="40" r="2" fill="#CFB87C"/>';
-              })() : '<circle cx="40" cy="40" r="2" fill="rgba(207,184,124,0.3)"/>'}
-            </svg>
+        <div class="compass-row">
+          <div class="compass-ring" onclick="handleCompassClick(event)">
+            ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir,i) {
+              var cls = 'compass-dir' + (s._facing===dir ? ' active' : '') + (i%2!==0 ? ' inter' : '');
+              return '<span class="'+cls+'" style="--angle:'+i*45+'deg">'+dir+'</span>';
+            }).join('')}
+            <span class="compass-needle" style="--rot:${s._facing ? ['N','NE','E','SE','S','SW','W','NW'].indexOf(s._facing)*45 : 0}deg;${s._facing ? '' : 'opacity:0'}"></span>
           </div>
-          ${s._facing ? '<button class="compass-clear" onclick="setFacing(null)">clear</button>' : ''}
+          <div class="compass-meta">
+            <span class="compass-label">Facing</span>
+            <span class="compass-value">${s._facing || '—'}</span>
+            ${s._facing ? '<button class="compass-clear" onclick="setFacing(null)">clear</button>' : ''}
+          </div>
         </div>
       </div>
       <div id="sign-map"></div>
