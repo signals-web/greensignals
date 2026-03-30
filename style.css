@@ -111,7 +111,13 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .facing-clear:hover { color: var(--flag); border-color: var(--flag); }
 
 #sign-map { width: 100%; aspect-ratio: 1 / 1; transition: transform .4s ease; transform-origin: center center; overflow: hidden; position: relative; }
+.map-sign-marker { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: var(--cu-gold); text-shadow: 0 1px 3px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.6); line-height: 1; }
 .map-north-indicator { position: absolute; top: 8px; left: 8px; z-index: 1000; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--cu-gold); background: rgba(28,28,30,0.85); border: 1px solid var(--cu-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.map-zoom-controls { position: absolute; bottom: 8px; right: 8px; z-index: 1000; display: flex; flex-direction: column; gap: 1px; }
+.map-zoom-btn { width: 24px; height: 24px; background: rgba(28,28,30,0.85); border: 1px solid var(--cu-border); color: var(--cu-muted); font-family: var(--font-mono); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.map-zoom-btn:first-child { border-radius: 3px 3px 0 0; }
+.map-zoom-btn:last-child { border-radius: 0 0 3px 3px; }
+.map-zoom-btn:hover { color: var(--cu-gold); border-color: var(--cu-gold); }
 
 .status-banner { padding: 9px 1.5rem; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
 .banner-approved { background: var(--approve-bg); color: var(--approve); }

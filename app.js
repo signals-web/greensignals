@@ -320,7 +320,7 @@ function initMap() {
   const s=state.filtered[state.current];
   const lat=s?parseFloat(s.lat):40.0;
   const lng=s?parseFloat(s.lng):-105.27;
-  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
+  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
   setTimeout(function(){map.invalidateSize();updateMap();},100);
 }
@@ -334,11 +334,11 @@ function updateMap() {
   destMarkers.forEach(function(m){map.removeLayer(m);});
   destMarkers=[];
 
-  // Sign marker
-  const svgContent = getTypeIcon(s.type);
-  const iconHtml = `<div style="width:14px;height:14px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8));">${svgContent}</div>`;
-  const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
-  mapMarker=L.marker([lat,lng],{icon}).addTo(map);
+  // Sign marker — em-dash rotated to facing direction
+  var signRot = s._facing ? DIR_DEGS[s._facing] : 0;
+  var signHtml = '<div class="map-sign-marker" style="transform:rotate('+signRot+'deg)">&mdash;</div>';
+  var signIcon = L.divIcon({html:signHtml, iconSize:[18,18], iconAnchor:[9,9], className:''});
+  mapMarker=L.marker([lat,lng],{icon:signIcon}).addTo(map);
 
   // Destination markers with labels and connecting lines
   var hasDests = false;
@@ -395,10 +395,19 @@ function updateMap() {
     mapEl.appendChild(northDiv);
   }
 
+  // Zoom controls
+  if (!document.getElementById('map-zoom-in')) {
+    var zoomWrap = document.createElement('div');
+    zoomWrap.className = 'map-zoom-controls';
+    zoomWrap.innerHTML = '<button id="map-zoom-in" class="map-zoom-btn" onclick="mapZoom(1)">+</button><button id="map-zoom-out" class="map-zoom-btn" onclick="mapZoom(-1)">&minus;</button>';
+    mapEl.appendChild(zoomWrap);
+  }
+
   map.invalidateSize();
   if(hasDests) { map.fitBounds(bounds.pad(0.25)); } else { map.setView([lat,lng],17); }
   setTimeout(function(){map.invalidateSize();if(hasDests){map.fitBounds(bounds.pad(0.25));}else{map.setView([lat,lng],17);}},150);
 }
+function mapZoom(delta) { if(map) map.setZoom(map.getZoom()+delta); }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
   if (deg === null || deg === undefined) return null;
