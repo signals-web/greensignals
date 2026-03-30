@@ -126,6 +126,17 @@ function getTypeIcon(type) { return TYPE_ICONS[type] || DEFAULT_ICON; }
 
 const TYPE_LABELS = { N:'Nudge', SD:'Secondary Directional', M:'Main', PM:'Primary Main', A:'Primary', B:'Secondary', C:'Tertiary' };
 
+function facingCompassSvg(facing) {
+  if (!facing) {
+    // Animated compass (EOS Icons) when no direction set
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"><animateTransform id="eosC0" attributeName="transform" attributeType="XML" begin="0;eosC2.end" dur="1s" from="-90 12 12" to="0 12 12" type="rotate"/><animateTransform id="eosC1" attributeName="transform" attributeType="XML" begin="eosC0.end" dur="1s" from="0 12 12" to="-90 12 12" type="rotate"/><animateTransform id="eosC2" attributeName="transform" attributeType="XML" begin="eosC1.end" dur="1s" from="-90 12 12" to="270 12 12" type="rotate"/></path></svg>';
+  }
+  // Static compass rotated to face the selected direction
+  // The icon's needle points NE by default (≈45°), so subtract 45 from target
+  var rot = DIR_DEGS[facing] - 45;
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z" transform="rotate('+rot+' 12 12)"/></svg>';
+}
+
 // ── DOUBLE-SIDED SIGN LOGIC ──
 // Default (no facing): front arrows ↑(270),↗(315),↖(225); back ↓(90),↘(45),↙(135); side →(0),←(180)
 const DIR_DEGS = { N:0, NE:45, E:90, SE:135, S:180, SW:225, W:270, NW:315 };
@@ -484,12 +495,15 @@ function renderMain(){
         <div class="sign-card-coords">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>
         <div class="facing-picker">
           <span class="facing-label">Facing</span>
-          <div class="facing-btns">
-            ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir) {
-              var active = s._facing===dir ? ' active' : '';
-              return '<button class="facing-btn'+active+'" onclick="setFacing(\''+dir+'\')">'+dir+'</button>';
-            }).join('')}
-            ${s._facing ? '<button class="facing-btn facing-clear" onclick="setFacing(null)">&times;</button>' : ''}
+          <div class="facing-row">
+            <div class="facing-compass">${facingCompassSvg(s._facing)}</div>
+            <div class="facing-btns">
+              ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir) {
+                var active = s._facing===dir ? ' active' : '';
+                return '<button class="facing-btn'+active+'" onclick="setFacing(\''+dir+'\')">'+dir+'</button>';
+              }).join('')}
+              ${s._facing ? '<button class="facing-btn facing-clear" onclick="setFacing(null)">&times;</button>' : ''}
+            </div>
           </div>
         </div>
       </div>

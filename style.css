@@ -101,6 +101,8 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 /* FACING PICKER */
 .facing-picker { margin-top: 10px; }
 .facing-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-border); display: block; margin-bottom: 5px; }
+.facing-row { display: flex; align-items: center; gap: 8px; }
+.facing-compass { color: var(--cu-gold); line-height: 0; flex-shrink: 0; }
 .facing-btns { display: flex; gap: 3px; flex-wrap: wrap; }
 .facing-btn { font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; padding: 4px 7px; background: transparent; border: 1px solid var(--cu-border); color: var(--cu-muted); border-radius: 3px; cursor: pointer; transition: all .15s; line-height: 1; }
 .facing-btn:hover { border-color: var(--cu-gold); color: var(--cu-white); }
