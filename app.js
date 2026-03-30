@@ -304,11 +304,12 @@ function updateMap() {
   const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
   mapMarker=L.marker([lat,lng],{icon}).addTo(map);
 
-  // Walking radius circle
-  const maxDist = {N:400, SD:650, M:1500, PM:2000}[s.type] || 650;
+  // Walking radius circle (meters = minutes × 80m/min walk speed)
+  // N: 3 min, SD: 8 min, M: 12 min, PM: 18 min
+  const maxDist = {N:240, SD:640, M:960, PM:1440}[s.type] || 640;
   const radiusCircle = L.circle([lat,lng], {
-    radius: maxDist, color:'rgba(207,184,124,0.3)', fillColor:'rgba(207,184,124,0.05)',
-    weight:1, dashArray:'6 4', fillOpacity:1
+    radius: maxDist, color:'#CFB87C', fillColor:'rgba(207,184,124,0.06)',
+    weight:1.5, dashArray:'6 4', fillOpacity:1
   }).addTo(map);
   destMarkers.push(radiusCircle);
 
