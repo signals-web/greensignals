@@ -110,7 +110,8 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .facing-clear { color: var(--cu-border); font-size: 12px; padding: 3px 6px; }
 .facing-clear:hover { color: var(--flag); border-color: var(--flag); }
 
-#sign-map { width: 100%; aspect-ratio: 1 / 1; }
+#sign-map { width: 100%; aspect-ratio: 1 / 1; transition: transform .4s ease; transform-origin: center center; overflow: hidden; position: relative; }
+.map-north-indicator { position: absolute; top: 8px; left: 8px; z-index: 1000; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--cu-gold); background: rgba(28,28,30,0.85); border: 1px solid var(--cu-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 
 .status-banner { padding: 9px 1.5rem; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
 .banner-approved { background: var(--approve-bg); color: var(--approve); }

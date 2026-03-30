@@ -372,9 +372,32 @@ function updateMap() {
     bounds.extend([dlat,dlng]);
   });
 
+  // Rotate map to match sign facing direction
+  var mapEl = document.getElementById('sign-map');
+  var rot = s._facing ? DIR_DEGS[s._facing] : 0;
+  mapEl.style.transform = rot ? 'rotate(-'+rot+'deg)' : '';
+
+  // Counter-rotate labels so text stays upright
+  var labelEls = mapEl.querySelectorAll('.map-dest-label');
+  for (var li=0; li<labelEls.length; li++) {
+    labelEls[li].style.transform = rot ? 'rotate('+rot+'deg)' : '';
+  }
+
+  // North indicator when map is rotated
+  var oldNorth = document.getElementById('map-north');
+  if (oldNorth) oldNorth.remove();
+  if (rot) {
+    var northDiv = document.createElement('div');
+    northDiv.id = 'map-north';
+    northDiv.className = 'map-north-indicator';
+    northDiv.style.transform = 'rotate('+rot+'deg)';
+    northDiv.textContent = 'N';
+    mapEl.appendChild(northDiv);
+  }
+
   map.invalidateSize();
-  if(hasDests) { map.fitBounds(bounds.pad(0.15)); } else { map.setView([lat,lng],17); }
-  setTimeout(function(){map.invalidateSize();if(hasDests){map.fitBounds(bounds.pad(0.15));}else{map.setView([lat,lng],17);}},150);
+  if(hasDests) { map.fitBounds(bounds.pad(0.25)); } else { map.setView([lat,lng],17); }
+  setTimeout(function(){map.invalidateSize();if(hasDests){map.fitBounds(bounds.pad(0.25));}else{map.setView([lat,lng],17);}},150);
 }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
