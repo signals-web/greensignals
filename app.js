@@ -448,7 +448,8 @@ function renderSidebar(){
   const a=document.querySelector('.sign-item.active');if(a)a.scrollIntoView({block:'nearest'});
 }
 
-function buildDestTable(dests, sign, editing) {
+function buildDestTable(dests, sign, editing, facingOffset) {
+  var offset = facingOffset || 0;
   let html = `<table class="dest-table"><thead><tr>
     <th class="arrow-col">Arrow</th>
     <th>Destination</th>
@@ -466,8 +467,13 @@ function buildDestTable(dests, sign, editing) {
         <td><button class="remove-btn" onclick="removeDest(${origIdx})">×</button></td>
       </tr>`;
     } else {
+      // Rotate arrow relative to facing direction
+      var displayDeg = d.deg;
+      if (offset && displayDeg !== null && displayDeg !== undefined) {
+        displayDeg = ((Number(displayDeg) - offset) + 360) % 360;
+      }
       html+=`<tr>
-        <td>${arrowDisplay(d.deg)}</td>
+        <td>${arrowDisplay(displayDeg)}</td>
         <td class="dest-name-cell${d.name?'':' empty'}">${escHtml(d.name)||'—'}</td>
         <td>${d.ttd?`<span class="ttd-chip">${escHtml(d.ttd)}</span>`:''}</td>
       </tr>`;
@@ -539,15 +545,18 @@ function renderMain(){
   const frontDir = s._facing || '';
   const backDir = s._facing ? OPPOSITE_DIR[s._facing] : '';
 
+  // Screen-degree offset for arrow rotation relative to facing
+  var facingScreenOffset = s._facing ? (DIR_DEGS[s._facing] - 90 + 360) % 360 : 0;
+
   if(s.editing) {
     html+=buildDestTable(s.dests, s, true);
   } else if(hasBackSide) {
     html+=`<div class="side-label">Side A <span class="side-hint">front${frontDir ? ' · '+frontDir : ''}</span></div>`;
-    html+=buildDestTable(sides.front, s, false);
+    html+=buildDestTable(sides.front, s, false, facingScreenOffset);
     html+=`<div class="side-label side-b">Side B <span class="side-hint">back${backDir ? ' · '+backDir : ''}</span></div>`;
-    html+=buildDestTable(sides.back, s, false);
+    html+=buildDestTable(sides.back, s, false, facingScreenOffset);
   } else {
-    html+=buildDestTable(s.dests, s, false);
+    html+=buildDestTable(s.dests, s, false, facingScreenOffset);
   }
 
   if(s.editing){
