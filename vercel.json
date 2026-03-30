@@ -1,5 +1,6 @@
 {
   "buildCommand": "sh build.sh",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/:project", "destination": "/index.html" },
     { "source": "/", "destination": "/index.html" }
