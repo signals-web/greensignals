@@ -342,8 +342,9 @@ function updateMap() {
     bounds.extend([dlat,dlng]);
   });
 
+  map.invalidateSize();
   map.fitBounds(bounds.pad(0.1));
-  setTimeout(()=>map.invalidateSize(),50);
+  setTimeout(function(){map.invalidateSize();map.fitBounds(bounds.pad(0.1));},150);
 }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
@@ -463,14 +464,32 @@ function renderMain(){
         <div class="sign-card-nbhd">${s.nbhd}</div>
         <div class="sign-card-coords">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>
         <div class="sign-rotation">
-          <span class="rotation-label">Facing</span>
-          <div class="rotation-picker">
-            ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir) {
-              const active = s._facing === dir ? ' active' : '';
-              return '<button class="rot-btn' + active + '" onclick="setFacing(\'' + dir + '\')">' + dir + '</button>';
-            }).join('')}
-            <button class="rot-btn${!s._facing?' active':''}" onclick="setFacing(null)">—</button>
+          <span class="rotation-label">Facing${s._facing ? ': '+s._facing : ''}</span>
+          <div class="compass-widget" onclick="handleCompassClick(event)">
+            <svg viewBox="0 0 80 80" class="compass-svg">
+              <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(207,184,124,0.2)" stroke-width="1"/>
+              <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(207,184,124,0.1)" stroke-width="1"/>
+              ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir,i) {
+                var a = i*45*Math.PI/180;
+                var tx = 40 + 36*Math.sin(a);
+                var ty = 40 - 36*Math.cos(a);
+                var isActive = s._facing===dir;
+                var fill = isActive ? '#CFB87C' : 'rgba(207,184,124,0.4)';
+                var fs = i%2===0 ? '7' : '5.5';
+                return '<text x="'+tx+'" y="'+ty+'" text-anchor="middle" dominant-baseline="central" fill="'+fill+'" font-size="'+fs+'" font-family="monospace" style="cursor:pointer;font-weight:'+(isActive?'bold':'normal')+'">'+dir+'</text>';
+              }).join('')}
+              ${s._facing ? (function(){
+                var fi = ['N','NE','E','SE','S','SW','W','NW'].indexOf(s._facing);
+                var fa = fi*45*Math.PI/180;
+                var nx = 40 + 24*Math.sin(fa);
+                var ny = 40 - 24*Math.cos(fa);
+                return '<line x1="40" y1="40" x2="'+nx+'" y2="'+ny+'" stroke="#CFB87C" stroke-width="2" stroke-linecap="round"/>' +
+                       '<circle cx="'+nx+'" cy="'+ny+'" r="3" fill="#CFB87C"/>' +
+                       '<circle cx="40" cy="40" r="2" fill="#CFB87C"/>';
+              })() : '<circle cx="40" cy="40" r="2" fill="rgba(207,184,124,0.3)"/>'}
+            </svg>
           </div>
+          ${s._facing ? '<button class="compass-clear" onclick="setFacing(null)">clear</button>' : ''}
         </div>
       </div>
       <div id="sign-map"></div>
@@ -528,6 +547,17 @@ function setFacing(dir) {
   const s = state.filtered[state.current];
   s._facing = dir;
   renderMain();
+}
+function handleCompassClick(e) {
+  const svg = e.currentTarget.querySelector('svg');
+  const rect = svg.getBoundingClientRect();
+  const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+  const dx = e.clientX - cx, dy = -(e.clientY - cy); // flip Y for math
+  const angle = ((Math.atan2(dx, dy) * 180 / Math.PI) + 360) % 360;
+  // Snap to nearest 45°
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  const idx = Math.round(angle / 45) % 8;
+  setFacing(dirs[idx]);
 }
 
 function goTo(i){

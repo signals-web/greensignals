@@ -98,13 +98,13 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .sign-card-nbhd { font-size: 15px; color: var(--cu-muted); }
 .sign-card-coords { font-family: var(--font-mono); font-size: 11px; color: var(--cu-border); }
 
-/* SIGN ROTATION PICKER */
+/* COMPASS WIDGET */
 .sign-rotation { margin-top: 8px; }
 .rotation-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); display: block; margin-bottom: 4px; }
-.rotation-picker { display: flex; gap: 2px; flex-wrap: wrap; }
-.rot-btn { font-family: var(--font-mono); font-size: 10px; padding: 3px 6px; background: transparent; border: 1px solid var(--cu-border); color: var(--cu-muted); border-radius: 4px; cursor: pointer; }
-.rot-btn:hover { border-color: var(--cu-accent); color: var(--cu-accent); }
-.rot-btn.active { background: var(--cu-accent); color: var(--cu-bg); border-color: var(--cu-accent); }
+.compass-widget { width: 90px; height: 90px; cursor: pointer; }
+.compass-svg { width: 100%; height: 100%; }
+.compass-clear { font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; background: none; border: none; color: var(--cu-muted); cursor: pointer; padding: 2px 0; margin-top: 2px; }
+.compass-clear:hover { color: var(--cu-accent); }
 
 #sign-map { width: 100%; aspect-ratio: 1 / 1; }
 
