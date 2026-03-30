@@ -304,9 +304,9 @@ function updateMap() {
   const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
   mapMarker=L.marker([lat,lng],{icon}).addTo(map);
 
-  // Walking radius circle (meters = minutes × 80m/min walk speed)
-  // N: 3 min, SD: 8 min, M: 12 min, PM: 18 min
-  const maxDist = {N:240, SD:640, M:960, PM:1440}[s.type] || 640;
+  // Walking radius circle (meters ≈ walk minutes × 80m/min)
+  // N: ~2 min, SD: ~5 min, M: ~7 min, PM: ~10 min
+  const maxDist = {N:150, SD:400, M:560, PM:800}[s.type] || 400;
   const radiusCircle = L.circle([lat,lng], {
     radius: maxDist, color:'#CFB87C', fillColor:'rgba(207,184,124,0.06)',
     weight:1.5, dashArray:'6 4', fillOpacity:1
