@@ -395,13 +395,16 @@ function updateMap() {
     mapEl.appendChild(northDiv);
   }
 
-  // Zoom controls
-  if (!document.getElementById('map-zoom-in')) {
-    var zoomWrap = document.createElement('div');
+  // Zoom controls — counter-rotate to stay upright
+  var zoomWrap = document.getElementById('map-zoom-wrap');
+  if (!zoomWrap) {
+    zoomWrap = document.createElement('div');
+    zoomWrap.id = 'map-zoom-wrap';
     zoomWrap.className = 'map-zoom-controls';
-    zoomWrap.innerHTML = '<button id="map-zoom-in" class="map-zoom-btn" onclick="mapZoom(1)">+</button><button id="map-zoom-out" class="map-zoom-btn" onclick="mapZoom(-1)">&minus;</button>';
+    zoomWrap.innerHTML = '<button class="map-zoom-btn" onclick="mapZoom(1)">+</button><button class="map-zoom-btn" onclick="mapZoom(-1)">&minus;</button>';
     mapEl.appendChild(zoomWrap);
   }
+  zoomWrap.style.transform = rot ? 'rotate('+rot+'deg)' : '';
 
   map.invalidateSize();
   if(hasDests) { map.fitBounds(bounds.pad(0.25)); } else { map.setView([lat,lng],17); }
