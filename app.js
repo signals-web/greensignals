@@ -410,18 +410,17 @@ function updateMap() {
   map.invalidateSize();
   var zoom = 17;
   if (hasDests) {
-    // Find zoom that shows all destinations while staying centered on sign
-    map.setView([lat,lng], 19);
-    for (var z=18; z>=13; z--) {
-      map.setZoom(z);
-      if (map.getBounds().contains(bounds)) break;
-    }
-    zoom = map.getZoom();
+    // Calculate zoom without visible animation
+    var tempBounds = L.latLngBounds([[lat,lng]]);
+    bounds.extend([lat,lng]);
+    zoom = map.getBoundsZoom(bounds, false) - 1;
+    if (zoom > 18) zoom = 18;
+    if (zoom < 13) zoom = 13;
   }
-  map.setView([lat,lng], zoom);
+  map.setView([lat,lng], zoom, {animate:false});
   setTimeout(function(){
     map.invalidateSize();
-    map.setView([lat,lng], zoom);
+    map.setView([lat,lng], zoom, {animate:false});
     resolveOverlaps(mapEl);
   },200);
 }
