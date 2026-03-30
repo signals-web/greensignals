@@ -392,18 +392,18 @@ function updateMap() {
     northDiv.className = 'map-north-indicator';
     northDiv.style.transform = 'rotate('+rot+'deg)';
     northDiv.textContent = 'N';
-    mapEl.appendChild(northDiv);
+    mapEl.parentElement.appendChild(northDiv);
   }
 
-  // Zoom controls — placed outside the rotated map, in the header wrapper
-  var headerEl = mapEl.parentElement;
+  // Zoom controls — placed in the clip wrapper (outside rotated map)
+  var clipEl = mapEl.parentElement;
   var zoomWrap = document.getElementById('map-zoom-wrap');
   if (!zoomWrap) {
     zoomWrap = document.createElement('div');
     zoomWrap.id = 'map-zoom-wrap';
     zoomWrap.className = 'map-zoom-controls';
     zoomWrap.innerHTML = '<button class="map-zoom-btn" onclick="mapZoom(1)">+</button><button class="map-zoom-btn" onclick="mapZoom(-1)">&minus;</button>';
-    headerEl.appendChild(zoomWrap);
+    clipEl.appendChild(zoomWrap);
   }
 
   // Center on sign, zoom to fit furthest destination
@@ -588,7 +588,7 @@ function renderMain(){
           </div>
         </div>
       </div>
-      <div id="sign-map"></div>
+      <div class="map-clip"><div id="sign-map"></div></div>
     </div>`;
 
   // Double-sided logic: split destinations into front/back when not editing
