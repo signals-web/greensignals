@@ -439,6 +439,7 @@ function resolveOverlaps(mapEl) {
       }
     }
   }
+}
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
   if (deg === null || deg === undefined) return null;
