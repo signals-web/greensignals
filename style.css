@@ -88,7 +88,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 
 /* SIGN CARD */
 .sign-card { background: var(--cu-dark); border: 1px solid var(--cu-border); border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
-.sign-card-header { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--cu-border); }
+.sign-card-header { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--cu-border); position: relative; }
 .sign-card-header-left { padding: 1.5rem; display: flex; flex-direction: column; gap: 6px; }
 .sign-card-top { display: flex; align-items: center; gap: 12px; }
 .sign-card-id { font-size: 38px; font-weight: 300; letter-spacing: -.03em; line-height: 1; }

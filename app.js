@@ -320,7 +320,7 @@ function initMap() {
   const s=state.filtered[state.current];
   const lat=s?parseFloat(s.lat):40.0;
   const lng=s?parseFloat(s.lng):-105.27;
-  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:true,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
+  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
   setTimeout(function(){map.invalidateSize();updateMap();},100);
 }
@@ -395,22 +395,50 @@ function updateMap() {
     mapEl.appendChild(northDiv);
   }
 
-  // Zoom controls — counter-rotate to stay upright
+  // Zoom controls — placed outside the rotated map, in the header wrapper
+  var headerEl = mapEl.parentElement;
   var zoomWrap = document.getElementById('map-zoom-wrap');
   if (!zoomWrap) {
     zoomWrap = document.createElement('div');
     zoomWrap.id = 'map-zoom-wrap';
     zoomWrap.className = 'map-zoom-controls';
     zoomWrap.innerHTML = '<button class="map-zoom-btn" onclick="mapZoom(1)">+</button><button class="map-zoom-btn" onclick="mapZoom(-1)">&minus;</button>';
-    mapEl.appendChild(zoomWrap);
+    headerEl.appendChild(zoomWrap);
   }
-  zoomWrap.style.transform = rot ? 'rotate('+rot+'deg)' : '';
 
   map.invalidateSize();
   if(hasDests) { map.fitBounds(bounds.pad(0.25)); } else { map.setView([lat,lng],17); }
-  setTimeout(function(){map.invalidateSize();if(hasDests){map.fitBounds(bounds.pad(0.25));}else{map.setView([lat,lng],17);}},150);
+  setTimeout(function(){
+    map.invalidateSize();
+    if(hasDests){map.fitBounds(bounds.pad(0.25));}else{map.setView([lat,lng],17);}
+    resolveOverlaps(mapEl);
+  },200);
 }
-function mapZoom(delta) { if(map) map.setZoom(map.getZoom()+delta); }
+function mapZoom(delta) {
+  if(!map) return;
+  var s = state.filtered[state.current];
+  var lat = parseFloat(s.lat), lng = parseFloat(s.lng);
+  map.setZoom(map.getZoom()+delta);
+  map.panTo([lat,lng]); // keep sign centered
+}
+// Simple label collision resolver — nudge overlapping labels down
+function resolveOverlaps(mapEl) {
+  var labels = mapEl.querySelectorAll('.map-dest-label');
+  if (labels.length < 2) return;
+  var rects = [];
+  for (var i=0; i<labels.length; i++) {
+    rects.push({ el: labels[i], r: labels[i].getBoundingClientRect() });
+  }
+  for (var i=1; i<rects.length; i++) {
+    for (var j=0; j<i; j++) {
+      var a = rects[i].r, b = rects[j].r;
+      if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
+        var shift = b.bottom - a.top + 2;
+        rects[i].el.style.marginTop = (parseInt(rects[i].el.style.marginTop||'0') + shift) + 'px';
+        rects[i].r = rects[i].el.getBoundingClientRect();
+      }
+    }
+  }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
   if (deg === null || deg === undefined) return null;
