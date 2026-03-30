@@ -98,21 +98,15 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .sign-card-nbhd { font-size: 15px; color: var(--cu-muted); }
 .sign-card-coords { font-family: var(--font-mono); font-size: 11px; color: var(--cu-border); }
 
-/* COMPASS */
-.compass-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
-.compass-ring { position: relative; width: 72px; height: 72px; border: 1px solid var(--cu-border); border-radius: 50%; cursor: pointer; flex-shrink: 0; }
-.compass-ring:hover { border-color: var(--cu-gold); }
-.compass-dir { position: absolute; font-family: var(--font-mono); font-size: 8px; font-weight: 500; letter-spacing: .04em; color: var(--cu-muted); text-transform: uppercase; --r: 30px; left: calc(50% + sin(var(--angle)) * var(--r)); top: calc(50% - cos(var(--angle)) * var(--r)); transform: translate(-50%,-50%); transition: color .15s; }
-.compass-dir.inter { font-size: 6px; color: var(--cu-border); --r: 28px; }
-.compass-dir.active { color: var(--cu-gold); font-weight: 500; }
-.compass-dir:hover { color: var(--cu-gold); }
-.compass-needle { position: absolute; left: 50%; bottom: 50%; width: 2px; height: 22px; background: var(--cu-gold); transform-origin: bottom center; transform: rotate(var(--rot)); border-radius: 1px; transition: transform .2s, opacity .2s; }
-.compass-needle::after { content: ''; position: absolute; top: -2px; left: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--cu-gold); }
-.compass-meta { display: flex; flex-direction: column; gap: 2px; }
-.compass-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-border); }
-.compass-value { font-family: var(--font-mono); font-size: 14px; font-weight: 500; letter-spacing: .06em; color: var(--cu-gold); }
-.compass-clear { font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; background: none; border: none; color: var(--cu-muted); cursor: pointer; padding: 0; text-align: left; }
-.compass-clear:hover { color: var(--cu-gold); }
+/* FACING PICKER */
+.facing-picker { margin-top: 10px; }
+.facing-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-border); display: block; margin-bottom: 5px; }
+.facing-btns { display: flex; gap: 3px; flex-wrap: wrap; }
+.facing-btn { font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; padding: 4px 7px; background: transparent; border: 1px solid var(--cu-border); color: var(--cu-muted); border-radius: 3px; cursor: pointer; transition: all .15s; line-height: 1; }
+.facing-btn:hover { border-color: var(--cu-gold); color: var(--cu-white); }
+.facing-btn.active { background: var(--cu-gold); color: var(--cu-black); border-color: var(--cu-gold); font-weight: 500; }
+.facing-clear { color: var(--cu-border); font-size: 12px; padding: 3px 6px; }
+.facing-clear:hover { color: var(--flag); border-color: var(--flag); }
 
 #sign-map { width: 100%; aspect-ratio: 1 / 1; }
 

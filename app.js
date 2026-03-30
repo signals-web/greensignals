@@ -127,28 +127,53 @@ function getTypeIcon(type) { return TYPE_ICONS[type] || DEFAULT_ICON; }
 const TYPE_LABELS = { N:'Nudge', SD:'Secondary Directional', M:'Main', PM:'Primary Main', A:'Primary', B:'Secondary', C:'Tertiary' };
 
 // ── DOUBLE-SIDED SIGN LOGIC ──
-// Back-facing arrows (behind the viewer): ↓(90), ↘(45), ↙(135)
-// Side arrows (perpendicular): →(0), ←(180)
-// Front-facing arrows (ahead): ↑(270), ↗(315), ↖(225)
+// Default (no facing): front arrows ↑(270),↗(315),↖(225); back ↓(90),↘(45),↙(135); side →(0),←(180)
+const DIR_DEGS = { N:0, NE:45, E:90, SE:135, S:180, SW:225, W:270, NW:315 };
+const OPPOSITE_DIR = { N:'S', NE:'SW', E:'W', SE:'NW', S:'N', SW:'NE', W:'E', NW:'SE' };
 const BACK_DEGS = new Set([90, 45, 135]);
 const SIDE_DEGS = new Set([0, 180]);
-const REFLECT_MAP = { 90: 270, 45: 225, 135: 315 }; // ↓→↑, ↘→↖, ↙→↗
+const REFLECT_MAP = { 90: 270, 45: 225, 135: 315 };
 
-function splitSides(dests) {
+function splitSides(dests, facing) {
   const front = [], back = [];
-  dests.forEach(function(d) {
-    const deg = d.deg;
-    if (deg === null || deg === undefined) {
-      front.push(d);
-    } else if (BACK_DEGS.has(Number(deg))) {
-      back.push({ ...d, deg: REFLECT_MAP[Number(deg)] });
-    } else if (SIDE_DEGS.has(Number(deg))) {
-      front.push(d);
-      back.push(d);
-    } else {
-      front.push(d);
-    }
-  });
+  if (facing) {
+    // When facing is set, rotate arrow interpretation relative to facing direction
+    var facingDeg = DIR_DEGS[facing]; // compass degrees the sign faces
+    dests.forEach(function(d) {
+      if (d.deg === null || d.deg === undefined) { front.push(d); return; }
+      // Screen degrees: 0=→, 90=↓, 180=←, 270=↑
+      // Convert screen deg to compass bearing, then find angle relative to facing
+      var compassBearing = (Number(d.deg) + 90) % 360;
+      var rel = ((compassBearing - facingDeg) + 360) % 360;
+      // Front: within ±67.5° of facing (rel 0-67.5 or 292.5-360)
+      // Back: within ±67.5° of opposite (rel 112.5-247.5)
+      // Side: 67.5-112.5 or 247.5-292.5
+      if (rel <= 67.5 || rel >= 292.5) {
+        front.push(d);
+      } else if (rel >= 112.5 && rel <= 247.5) {
+        // Reflect arrow for back side (rotate 180° in screen degrees)
+        back.push({ ...d, deg: (Number(d.deg) + 180) % 360 });
+      } else {
+        front.push(d);
+        back.push(d);
+      }
+    });
+  } else {
+    // Default: use fixed screen-degree sets
+    dests.forEach(function(d) {
+      var deg = d.deg;
+      if (deg === null || deg === undefined) {
+        front.push(d);
+      } else if (BACK_DEGS.has(Number(deg))) {
+        back.push({ ...d, deg: REFLECT_MAP[Number(deg)] });
+      } else if (SIDE_DEGS.has(Number(deg))) {
+        front.push(d);
+        back.push(d);
+      } else {
+        front.push(d);
+      }
+    });
+  }
   return { front, back };
 }
 
@@ -457,18 +482,14 @@ function renderMain(){
         <div class="sign-card-type">${TYPE_LABELS[s.type]||s.type}</div>
         <div class="sign-card-nbhd">${s.nbhd}</div>
         <div class="sign-card-coords">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>
-        <div class="compass-row">
-          <div class="compass-ring" onclick="handleCompassClick(event)">
-            ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir,i) {
-              var cls = 'compass-dir' + (s._facing===dir ? ' active' : '') + (i%2!==0 ? ' inter' : '');
-              return '<span class="'+cls+'" style="--angle:'+i*45+'deg">'+dir+'</span>';
+        <div class="facing-picker">
+          <span class="facing-label">Facing</span>
+          <div class="facing-btns">
+            ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir) {
+              var active = s._facing===dir ? ' active' : '';
+              return '<button class="facing-btn'+active+'" onclick="setFacing(\''+dir+'\')">'+dir+'</button>';
             }).join('')}
-            <span class="compass-needle" style="--rot:${s._facing ? ['N','NE','E','SE','S','SW','W','NW'].indexOf(s._facing)*45 : 0}deg;${s._facing ? '' : 'opacity:0'}"></span>
-          </div>
-          <div class="compass-meta">
-            <span class="compass-label">Facing</span>
-            <span class="compass-value">${s._facing || '—'}</span>
-            ${s._facing ? '<button class="compass-clear" onclick="setFacing(null)">clear</button>' : ''}
+            ${s._facing ? '<button class="facing-btn facing-clear" onclick="setFacing(null)">&times;</button>' : ''}
           </div>
         </div>
       </div>
@@ -476,20 +497,19 @@ function renderMain(){
     </div>`;
 
   // Double-sided logic: split destinations into front/back when not editing
-  const sides = !s.editing ? splitSides(s.dests) : null;
+  const sides = !s.editing ? splitSides(s.dests, s._facing) : null;
   const hasBackSide = sides && sides.back.length > 0;
+  const frontDir = s._facing || '';
+  const backDir = s._facing ? OPPOSITE_DIR[s._facing] : '';
 
   if(s.editing) {
-    // Editing mode: single flat table (edit all destinations)
     html+=buildDestTable(s.dests, s, true);
   } else if(hasBackSide) {
-    // Double-sided: show Side A and Side B
-    html+=`<div class="side-label">Side A <span class="side-hint">front</span></div>`;
+    html+=`<div class="side-label">Side A <span class="side-hint">front${frontDir ? ' · '+frontDir : ''}</span></div>`;
     html+=buildDestTable(sides.front, s, false);
-    html+=`<div class="side-label side-b">Side B <span class="side-hint">back</span></div>`;
+    html+=`<div class="side-label side-b">Side B <span class="side-hint">back${backDir ? ' · '+backDir : ''}</span></div>`;
     html+=buildDestTable(sides.back, s, false);
   } else {
-    // Single-sided: all destinations on front
     html+=buildDestTable(s.dests, s, false);
   }
 
@@ -527,17 +547,6 @@ function setFacing(dir) {
   const s = state.filtered[state.current];
   s._facing = dir;
   renderMain();
-}
-function handleCompassClick(e) {
-  const svg = e.currentTarget.querySelector('svg');
-  const rect = svg.getBoundingClientRect();
-  const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-  const dx = e.clientX - cx, dy = -(e.clientY - cy); // flip Y for math
-  const angle = ((Math.atan2(dx, dy) * 180 / Math.PI) + 360) % 360;
-  // Snap to nearest 45°
-  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
-  const idx = Math.round(angle / 45) % 8;
-  setFacing(dirs[idx]);
 }
 
 function goTo(i){
