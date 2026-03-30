@@ -7,18 +7,20 @@ function getSheetsClientId() { return window.PROJECT ? window.PROJECT.oauthClien
 function getSheetId() { return window.PROJECT ? window.PROJECT.sheetId : ''; }
 function getSheetTab() { return window.PROJECT ? window.PROJECT.sheetTab : 'MESSAGING'; }
 
-// Column indices (0-based) in the Sheet
+// Column indices (0-based) in the MESSAGING tab
+// Layout: [Sign ID, Type, Lat, Lng, Neighborhood, R1..R8 (4 cols each), Status, Notes, Last Updated]
+// R1-R8: 8 slots × 4 columns (Arrow, Auto, Override, ttd) = 32 cols at indices 5-36
 const COL = {
-  SIGN_ID: 0,    // A
-  TYPE: 1,       // B
-  LAT: 2,        // C
-  LNG: 3,        // D
-  NBHD: 4,       // E
-  // R1-R8: columns F-AI (5-34), each group of 4: Arrow, Auto, Override, ttd
-  STATUS: 36,    // AK (was AJ in plan — adjusting to 0-indexed from header count)
-  NOTES: 37,     // AL
-  LAST_UPDATED: 38, // AM
-  REVIEWED_BY: 39   // AN — will create this column
+  SIGN_ID: 0,       // A
+  TYPE: 1,          // B
+  LAT: 2,           // C
+  LNG: 3,           // D
+  NBHD: 4,          // E
+  // R1-R8: columns F-AK (5-36), each group of 4: Arrow, Auto, Override, ttd
+  STATUS: 37,       // AL
+  NOTES: 38,        // AM
+  LAST_UPDATED: 39, // AN
+  REVIEWED_BY: 40   // AO
 };
 
 // Column letters for write-back
