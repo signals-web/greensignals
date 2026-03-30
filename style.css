@@ -97,6 +97,15 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .sign-card-type { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; color: var(--cu-muted); text-transform: uppercase; }
 .sign-card-nbhd { font-size: 15px; color: var(--cu-muted); }
 .sign-card-coords { font-family: var(--font-mono); font-size: 11px; color: var(--cu-border); }
+
+/* SIGN ROTATION PICKER */
+.sign-rotation { margin-top: 8px; }
+.rotation-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); display: block; margin-bottom: 4px; }
+.rotation-picker { display: flex; gap: 2px; flex-wrap: wrap; }
+.rot-btn { font-family: var(--font-mono); font-size: 10px; padding: 3px 6px; background: transparent; border: 1px solid var(--cu-border); color: var(--cu-muted); border-radius: 4px; cursor: pointer; }
+.rot-btn:hover { border-color: var(--cu-accent); color: var(--cu-accent); }
+.rot-btn.active { background: var(--cu-accent); color: var(--cu-bg); border-color: var(--cu-accent); }
+
 #sign-map { width: 100%; aspect-ratio: 1 / 1; }
 
 .status-banner { padding: 9px 1.5rem; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }

@@ -301,8 +301,16 @@ function updateMap() {
   const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
   mapMarker=L.marker([lat,lng],{icon}).addTo(map);
 
+  // Walking radius circle
+  const maxDist = {N:400, SD:650, M:1500, PM:2000}[s.type] || 650;
+  const radiusCircle = L.circle([lat,lng], {
+    radius: maxDist, color:'rgba(207,184,124,0.3)', fillColor:'rgba(207,184,124,0.05)',
+    weight:1, dashArray:'6 4', fillOpacity:1
+  }).addTo(map);
+  destMarkers.push(radiusCircle);
+
   // Destination markers with labels and connecting lines
-  const bounds = L.latLngBounds([[lat,lng]]);
+  const bounds = radiusCircle.getBounds();
   s.dests.forEach(function(d) {
     if(!d.name) return;
     const pos = estimateDestPos(lat, lng, d.deg, d.ttd);
@@ -311,18 +319,18 @@ function updateMap() {
 
     // Connecting line
     const line = L.polyline([[lat,lng],[dlat,dlng]], {
-      color:'rgba(207,184,124,0.4)', weight:1.5, dashArray:'4 4'
+      color:'rgba(207,184,124,0.35)', weight:1.5, dashArray:'4 4'
     }).addTo(map);
     destMarkers.push(line);
 
     // Destination dot
     const dot = L.circleMarker([dlat,dlng], {
-      radius:4, fillColor:'#CFB87C', fillOpacity:0.9,
+      radius:3, fillColor:'#CFB87C', fillOpacity:0.9,
       color:'rgba(0,0,0,0.5)', weight:1
     }).addTo(map);
     destMarkers.push(dot);
 
-    // Label
+    // Name label at destination
     const label = L.marker([dlat,dlng], {
       icon: L.divIcon({
         html: `<div class="map-dest-label">${escHtml(d.name)}</div>`,
@@ -334,12 +342,7 @@ function updateMap() {
     bounds.extend([dlat,dlng]);
   });
 
-  // Fit bounds if we have destination markers, otherwise center on sign
-  if(destMarkers.length > 0) {
-    map.fitBounds(bounds.pad(0.15));
-  } else {
-    map.setView([lat,lng],17);
-  }
+  map.fitBounds(bounds.pad(0.1));
   setTimeout(()=>map.invalidateSize(),50);
 }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
@@ -459,6 +462,16 @@ function renderMain(){
         <div class="sign-card-type">${TYPE_LABELS[s.type]||s.type}</div>
         <div class="sign-card-nbhd">${s.nbhd}</div>
         <div class="sign-card-coords">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>
+        <div class="sign-rotation">
+          <span class="rotation-label">Facing</span>
+          <div class="rotation-picker">
+            ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir) {
+              const active = s._facing === dir ? ' active' : '';
+              return '<button class="rot-btn' + active + '" onclick="setFacing(\'' + dir + '\')">' + dir + '</button>';
+            }).join('')}
+            <button class="rot-btn${!s._facing?' active':''}" onclick="setFacing(null)">—</button>
+          </div>
+        </div>
       </div>
       <div id="sign-map"></div>
     </div>`;
@@ -511,6 +524,12 @@ function renderMain(){
 }
 
 // ── ACTIONS ──
+function setFacing(dir) {
+  const s = state.filtered[state.current];
+  s._facing = dir;
+  renderMain();
+}
+
 function goTo(i){
   if(i<0||i>=state.filtered.length)return;
   state.filtered[state.current].editing=false;
