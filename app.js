@@ -126,9 +126,35 @@ function getTypeIcon(type) { return TYPE_ICONS[type] || DEFAULT_ICON; }
 
 const TYPE_LABELS = { N:'Nudge', SD:'Secondary Directional', M:'Main', PM:'Primary Main', A:'Primary', B:'Secondary', C:'Tertiary' };
 
+// ── DOUBLE-SIDED SIGN LOGIC ──
+// Back-facing arrows (behind the viewer): ↓(90), ↘(45), ↙(135)
+// Side arrows (perpendicular): →(0), ←(180)
+// Front-facing arrows (ahead): ↑(270), ↗(315), ↖(225)
+const BACK_DEGS = new Set([90, 45, 135]);
+const SIDE_DEGS = new Set([0, 180]);
+const REFLECT_MAP = { 90: 270, 45: 225, 135: 315 }; // ↓→↑, ↘→↖, ↙→↗
+
+function splitSides(dests) {
+  const front = [], back = [];
+  dests.forEach(function(d) {
+    const deg = d.deg;
+    if (deg === null || deg === undefined) {
+      front.push(d);
+    } else if (BACK_DEGS.has(Number(deg))) {
+      back.push({ ...d, deg: REFLECT_MAP[Number(deg)] });
+    } else if (SIDE_DEGS.has(Number(deg))) {
+      front.push(d);
+      back.push(d);
+    } else {
+      front.push(d);
+    }
+  });
+  return { front, back };
+}
+
 // ── STATE ──
 const state = { signs:[], current:0, filtered:[], filter:'' };
-let map=null, mapMarker=null;
+let map=null, mapMarker=null, destMarkers=[];
 
 // ── CSV ──
 function parseCSV(text) {
@@ -263,14 +289,75 @@ function updateMap() {
   if(!map)return;
   const s=state.filtered[state.current];if(!s)return;
   const lat=parseFloat(s.lat),lng=parseFloat(s.lng);if(isNaN(lat)||isNaN(lng))return;
+
+  // Clear previous markers and lines
+  if(mapMarker)map.removeLayer(mapMarker);
+  destMarkers.forEach(function(m){map.removeLayer(m);});
+  destMarkers=[];
+
+  // Sign marker
   const svgContent = getTypeIcon(s.type);
   const iconHtml = `<div style="width:14px;height:14px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8));">${svgContent}</div>`;
   const icon=L.divIcon({html:iconHtml,iconSize:[14,14],iconAnchor:[7,7],className:''});
-  if(mapMarker)map.removeLayer(mapMarker);
   mapMarker=L.marker([lat,lng],{icon}).addTo(map);
-  map.setView([lat,lng],17);
+
+  // Destination markers with labels and connecting lines
+  const bounds = L.latLngBounds([[lat,lng]]);
+  s.dests.forEach(function(d) {
+    if(!d.name) return;
+    const pos = estimateDestPos(lat, lng, d.deg, d.ttd);
+    if(!pos) return;
+    const dlat = pos.lat, dlng = pos.lng;
+
+    // Connecting line
+    const line = L.polyline([[lat,lng],[dlat,dlng]], {
+      color:'rgba(207,184,124,0.4)', weight:1.5, dashArray:'4 4'
+    }).addTo(map);
+    destMarkers.push(line);
+
+    // Destination dot
+    const dot = L.circleMarker([dlat,dlng], {
+      radius:4, fillColor:'#CFB87C', fillOpacity:0.9,
+      color:'rgba(0,0,0,0.5)', weight:1
+    }).addTo(map);
+    destMarkers.push(dot);
+
+    // Label
+    const label = L.marker([dlat,dlng], {
+      icon: L.divIcon({
+        html: `<div class="map-dest-label">${escHtml(d.name)}</div>`,
+        iconSize:[0,0], iconAnchor:[-8,-4], className:''
+      })
+    }).addTo(map);
+    destMarkers.push(label);
+
+    bounds.extend([dlat,dlng]);
+  });
+
+  // Fit bounds if we have destination markers, otherwise center on sign
+  if(destMarkers.length > 0) {
+    map.fitBounds(bounds.pad(0.15));
+  } else {
+    map.setView([lat,lng],17);
+  }
   setTimeout(()=>map.invalidateSize(),50);
 }
+// Estimate destination lat/lng from sign position, arrow degree, and walk time
+function estimateDestPos(signLat, signLng, deg, ttd) {
+  if (deg === null || deg === undefined) return null;
+  // Convert screen degrees back to compass bearing
+  const compassBearing = (Number(deg) + 90) % 360;
+  // Parse walk minutes from "~2 min" format
+  const minMatch = (ttd || '').match(/(\d+)/);
+  const minutes = minMatch ? parseInt(minMatch[1]) : 2;
+  const distMeters = minutes * 80; // walk speed
+  // Offset in degrees (rough: 1° lat ≈ 111000m, 1° lng ≈ 85000m at 40°N)
+  const bearingRad = compassBearing * Math.PI / 180;
+  const dLat = (distMeters * Math.cos(bearingRad)) / 111000;
+  const dLng = (distMeters * Math.sin(bearingRad)) / 85000;
+  return { lat: signLat + dLat, lng: signLng + dLng };
+}
+
 function statusColor(s){return s==='approved'?'#30D158':s==='edited'?'#FFD60A':s==='flagged'?'#FF453A':'#CFB87C';}
 
 // ── FILTER & COUNTS ──
@@ -302,6 +389,41 @@ function renderSidebar(){
       <span class="status-dot dot-${s.status}"></span>
     </div>`).join('');
   const a=document.querySelector('.sign-item.active');if(a)a.scrollIntoView({block:'nearest'});
+}
+
+function buildDestTable(dests, sign, editing) {
+  let html = `<table class="dest-table"><thead><tr>
+    <th class="arrow-col">Arrow</th>
+    <th>Destination</th>
+    <th style="width:90px">Walk</th>
+    ${editing?'<th style="width:36px"></th>':''}
+  </tr></thead><tbody>`;
+  dests.forEach(function(d, i) {
+    // For editing mode, find original index in sign.dests
+    const origIdx = editing ? i : sign.dests.indexOf(d);
+    if (editing) {
+      html+=`<tr>
+        <td>${arrowPickerHTML(d.deg,origIdx)}</td>
+        <td><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${origIdx},'name',this.value)"></td>
+        <td><input class="edit-input ttd-input" value="${escHtml(d.ttd)}" oninput="updateDest(${origIdx},'ttd',this.value)"></td>
+        <td><button class="remove-btn" onclick="removeDest(${origIdx})">×</button></td>
+      </tr>`;
+    } else {
+      html+=`<tr>
+        <td>${arrowDisplay(d.deg)}</td>
+        <td class="dest-name-cell${d.name?'':' empty'}">${escHtml(d.name)||'—'}</td>
+        <td>${d.ttd?`<span class="ttd-chip">${escHtml(d.ttd)}</span>`:''}</td>
+      </tr>`;
+    }
+  });
+  if (editing) {
+    html+=`<tr><td colspan="4" style="padding:10px 1.5rem"><button class="add-dest-btn" onclick="addDest()">+ add destination</button></td></tr>`;
+  }
+  if (dests.length === 0) {
+    html+=`<tr><td colspan="3" style="padding:12px 1.5rem;color:var(--cu-muted);font-style:italic">No destinations on this side</td></tr>`;
+  }
+  html+=`</tbody></table>`;
+  return html;
 }
 
 function renderMain(){
@@ -341,34 +463,23 @@ function renderMain(){
       <div id="sign-map"></div>
     </div>`;
 
-  html+=`<table class="dest-table"><thead><tr>
-    <th class="arrow-col">Arrow</th>
-    <th>Destination</th>
-    <th style="width:90px">Walk</th>
-    ${s.editing?'<th style="width:36px"></th>':''}
-  </tr></thead><tbody>`;
+  // Double-sided logic: split destinations into front/back when not editing
+  const sides = !s.editing ? splitSides(s.dests) : null;
+  const hasBackSide = sides && sides.back.length > 0;
 
-  s.dests.forEach((d,i)=>{
-    if(s.editing){
-      html+=`<tr>
-        <td>${arrowPickerHTML(d.deg,i)}</td>
-        <td><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${i},'name',this.value)"></td>
-        <td><input class="edit-input ttd-input" value="${escHtml(d.ttd)}" oninput="updateDest(${i},'ttd',this.value)"></td>
-        <td><button class="remove-btn" onclick="removeDest(${i})">×</button></td>
-      </tr>`;
-    } else {
-      html+=`<tr>
-        <td>${arrowDisplay(d.deg)}</td>
-        <td class="dest-name-cell${d.name?'':' empty'}">${escHtml(d.name)||'—'}</td>
-        <td>${d.ttd?`<span class="ttd-chip">${escHtml(d.ttd)}</span>`:''}</td>
-      </tr>`;
-    }
-  });
-
-  if(s.editing){
-    html+=`<tr><td colspan="4" style="padding:10px 1.5rem"><button class="add-dest-btn" onclick="addDest()">+ add destination</button></td></tr>`;
+  if(s.editing) {
+    // Editing mode: single flat table (edit all destinations)
+    html+=buildDestTable(s.dests, s, true);
+  } else if(hasBackSide) {
+    // Double-sided: show Side A and Side B
+    html+=`<div class="side-label">Side A <span class="side-hint">front</span></div>`;
+    html+=buildDestTable(sides.front, s, false);
+    html+=`<div class="side-label side-b">Side B <span class="side-hint">back</span></div>`;
+    html+=buildDestTable(sides.back, s, false);
+  } else {
+    // Single-sided: all destinations on front
+    html+=buildDestTable(s.dests, s, false);
   }
-  html+=`</tbody></table>`;
 
   if(s.editing){
     html+=`<div class="notes-area"><div class="notes-label">Notes for SIGNALS</div>
