@@ -89,7 +89,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 /* SIGN CARD */
 .sign-card { background: var(--cu-dark); border: 1px solid var(--cu-border); border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
 .sign-card-header { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--cu-border); position: relative; }
-.sign-card-header-left { padding: 1.5rem; display: flex; flex-direction: column; gap: 6px; }
+.sign-card-header-left { padding: 1.5rem; display: flex; flex-direction: column; gap: 6px; justify-content: space-between; }
 .sign-card-top { display: flex; align-items: center; gap: 12px; }
 .sign-card-id { font-size: 38px; font-weight: 300; letter-spacing: -.03em; line-height: 1; }
 .sign-type-icon { width: 28px; height: 28px; flex-shrink: 0; margin-top: 4px; }
@@ -99,7 +99,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .sign-card-coords { font-family: var(--font-mono); font-size: 11px; color: var(--cu-border); }
 
 /* FACING PICKER */
-.facing-picker { margin-top: 10px; }
+.facing-picker { margin-top: auto; }
 .facing-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-border); display: block; margin-bottom: 5px; }
 .facing-row { display: flex; align-items: center; gap: 8px; }
 .facing-compass { color: var(--cu-gold); line-height: 0; flex-shrink: 0; }
@@ -128,8 +128,8 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 /* TABLE */
 /* SIDE LABELS (double-sided signs) */
 .sides-row { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--cu-border); }
-.side-col { min-width: 0; background: rgba(255,255,255,.02); padding-bottom: 1rem; }
-html.light .side-col { background: rgba(0,0,0,.02); }
+.side-col { min-width: 0; background: rgba(255,255,255,.06); padding-bottom: 2rem; }
+html.light .side-col { background: rgba(0,0,0,.04); }
 .side-col + .side-col { border-left: 1px solid var(--cu-border); }
 .side-label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-accent); padding: 10px 1rem 0; }
 .side-label .side-hint { font-weight: 400; color: var(--cu-muted); margin-left: 6px; }

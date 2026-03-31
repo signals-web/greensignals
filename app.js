@@ -577,27 +577,13 @@ function buildDestTable(dests, sign, editing, facingOffset) {
       var db = b.displayDeg === null || b.displayDeg === undefined ? 999 : Number(b.displayDeg);
       return da - db;
     });
-    // Build groups of consecutive same-direction rows
-    var groups = [];
+    // Render sorted rows — arrow on every row, same-direction rows adjacent
     viewRows.forEach(function(r) {
-      var last = groups.length ? groups[groups.length - 1] : null;
-      var rDeg = r.displayDeg === null || r.displayDeg === undefined ? '__none__' : String(r.displayDeg);
-      if (last && last.key === rDeg) {
-        last.rows.push(r);
-      } else {
-        groups.push({ key: rDeg, deg: r.displayDeg, rows: [r] });
-      }
-    });
-    groups.forEach(function(g) {
-      g.rows.forEach(function(r, ri) {
-        html += `<tr>`;
-        if (ri === 0) {
-          html += `<td rowspan="${g.rows.length}">${arrowDisplay(g.deg)}</td>`;
-        }
-        html += `<td class="dest-name-cell${r.name?'':' empty'}">${escHtml(r.name)||'—'}</td>`;
-        html += `<td>${r.ttd?`<span class="ttd-chip">${escHtml(r.ttd)}</span>`:''}</td>`;
-        html += `</tr>`;
-      });
+      html += `<tr>`;
+      html += `<td>${arrowDisplay(r.displayDeg)}</td>`;
+      html += `<td class="dest-name-cell${r.name?'':' empty'}">${escHtml(r.name)||'—'}</td>`;
+      html += `<td>${r.ttd?`<span class="ttd-chip">${escHtml(r.ttd)}</span>`:''}</td>`;
+      html += `</tr>`;
     });
   }
   if (editing) {
