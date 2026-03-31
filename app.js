@@ -344,7 +344,7 @@ function initMap() {
     style: getMapStyle(),
     center: [lng, lat],
     zoom: 16,
-    bearing: -rot,
+    bearing: rot,
     interactive: false,
     attributionControl: false
   });
@@ -426,7 +426,7 @@ function updateMap() {
     var northDiv = document.createElement('div');
     northDiv.id = 'map-north';
     northDiv.className = 'map-north-indicator';
-    northDiv.style.transform = 'rotate(' + rot + 'deg)';
+    northDiv.style.transform = 'rotate(' + (-rot) + 'deg)';
     northDiv.textContent = 'N';
     clipEl.appendChild(northDiv);
   }
@@ -449,11 +449,11 @@ function updateMap() {
       zoom = Math.min(Math.max(Math.floor(cam.zoom) - 1, 13), 18);
     }
   }
-  map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: -rot });
+  map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: rot });
 
   setTimeout(function() {
     map.resize();
-    map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: -rot });
+    map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: rot });
   }, 200);
 }
 function mapZoom(delta) {
