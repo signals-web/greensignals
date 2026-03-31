@@ -112,7 +112,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 
 .map-clip { overflow: hidden; width: 100%; aspect-ratio: 1 / 1; position: relative; background: var(--cu-mid); }
 #sign-map { width: 100%; height: 100%; }
-.map-sign-marker { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: var(--cu-gold); text-shadow: 0 0 3px var(--cu-dark), 0 0 6px var(--cu-dark); line-height: 1; }
+.map-sign-marker { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900; color: var(--cu-white); text-shadow: 0 0 3px var(--cu-dark), 0 0 6px var(--cu-dark); line-height: 1; }
 .map-north-indicator { position: absolute; top: 8px; left: 8px; z-index: 1000; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--cu-gold); background: var(--cu-dark); border: 1px solid var(--cu-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0.9; }
 .map-zoom-controls { position: absolute; bottom: 8px; right: 8px; z-index: 1000; display: flex; flex-direction: column; gap: 1px; }
 .map-zoom-btn { width: 24px; height: 24px; background: var(--cu-dark); border: 1px solid var(--cu-border); color: var(--cu-muted); font-family: var(--font-mono); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; opacity: 0.9; }
