@@ -360,13 +360,22 @@ async function fetchPublicSheetData() {
 // ── INITIALIZE ON LOAD ──
 // Wait for project config to be ready, then init Sheets auth
 function _initSheetsWhenReady() {
-  // All users (admin + reviewer) use OAuth to connect to Sheets
-  if (window.PROJECT_READY) {
-    initSheetsAuth();
-  } else {
-    window.addEventListener('project-ready', () => {
+  function _doInit() {
+    if (window.IS_ADMIN) {
       initSheetsAuth();
-    }, { once: true });
+    } else {
+      // Reviewer: auto-load from public sheet via API key
+      if (!loadSession()) {
+        fetchPublicSheetData().then(ok => {
+          if (!ok) showSyncToast('Could not load sheet data — try the CSV option.', 'error');
+        });
+      }
+    }
+  }
+  if (window.PROJECT_READY) {
+    _doInit();
+  } else {
+    window.addEventListener('project-ready', _doInit, { once: true });
   }
 }
 if (document.readyState === 'loading') {
