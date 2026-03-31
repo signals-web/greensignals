@@ -80,6 +80,48 @@ function _initFirebase() {
       }).join('');
     });
 
+    // ── COMMENTS ──
+    let _commentUnsub = null;
+
+    window.fbPostComment = function(signId, text, reviewer) {
+      const safeId = signId.replace(/[.#$/[\]]/g, '_');
+      const commentRef = ref(db, `projects/${projectPath}/comments/${safeId}`);
+      push(commentRef, {
+        text,
+        author: reviewer || 'Anonymous',
+        ts: serverTimestamp()
+      });
+    };
+
+    window.loadComments = function(signId) {
+      const safeId = signId.replace(/[.#$/[\]]/g, '_');
+      const commentRef = ref(db, `projects/${projectPath}/comments/${safeId}`);
+      // Detach previous listener
+      if (_commentUnsub) { _commentUnsub(); _commentUnsub = null; }
+      _commentUnsub = onValue(commentRef, (snapshot) => {
+        const data = snapshot.val();
+        const thread = document.getElementById('comment-thread');
+        const count = document.getElementById('comment-count');
+        if (!thread) return;
+        if (!data) {
+          thread.innerHTML = '<div class="comment-empty">No comments yet</div>';
+          if (count) count.textContent = '';
+          return;
+        }
+        const comments = Object.values(data).filter(c => c.ts).sort((a, b) => a.ts - b.ts);
+        if (count) count.textContent = comments.length;
+        thread.innerHTML = comments.map(c =>
+          `<div class="comment-item">
+            <div class="comment-meta"><strong>${_escComment(c.author)}</strong><span class="comment-time">${_timeAgo(c.ts)}</span></div>
+            <div class="comment-text">${_escComment(c.text)}</div>
+          </div>`
+        ).join('');
+        thread.scrollTop = thread.scrollHeight;
+      });
+    };
+
+    function _escComment(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
     window.firebaseReady = true;
     console.log(`Firebase connected (project: ${projectPath})`);
 
