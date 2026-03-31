@@ -195,7 +195,6 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .btn-next { margin-left: auto; background: transparent; border-color: var(--cu-border); color: var(--cu-muted); }
 .btn-next:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
 
-.leaflet-tile-pane { filter: grayscale(1) brightness(.45) contrast(1.3); }
 .leaflet-control-attribution, .leaflet-control-zoom { display: none; }
 
 /* MAP OVERVIEW */
@@ -265,7 +264,6 @@ html.light .edit-input { background: #F5F4F0; }
 html.light .notes-area textarea { background: #F5F4F0; }
 html.light .drop-zone { border-color: #D1CEC6; }
 html.light #load-screen { background: #F5F4F0; }
-html.light .leaflet-tile-pane { filter: grayscale(.2) brightness(1) contrast(1); }
 html.light .map-legend { background: rgba(245,244,240,.95); }
 html.light .map-stats { background: rgba(245,244,240,.95); }
 

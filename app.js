@@ -321,7 +321,11 @@ function initMap() {
   const lat=s?parseFloat(s.lat):40.0;
   const lng=s?parseFloat(s.lng):-105.27;
   map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  var isLight = document.documentElement.classList.contains('light');
+  var tileUrl = isLight
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  L.tileLayer(tileUrl,{maxZoom:19,subdomains:'abcd'}).addTo(map);
   setTimeout(function(){map.invalidateSize();updateMap();},100);
 }
 function updateMap() {
