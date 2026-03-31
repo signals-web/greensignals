@@ -341,6 +341,10 @@ function updateMap() {
   mapMarker=L.marker([lat,lng],{icon:signIcon}).addTo(map);
 
   // Destination markers with labels and connecting lines
+  var isLight = document.documentElement.classList.contains('light');
+  var lineColor = isLight ? 'rgba(120,90,20,0.5)' : 'rgba(207,184,124,0.4)';
+  var dotFill = isLight ? '#7A5A14' : '#CFB87C';
+  var dotStroke = isLight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.5)';
   var hasDests = false;
   var bounds = L.latLngBounds([[lat,lng]]);
   s.dests.forEach(function(d) {
@@ -351,13 +355,13 @@ function updateMap() {
     hasDests = true;
 
     var line = L.polyline([[lat,lng],[dlat,dlng]], {
-      color:'rgba(207,184,124,0.35)', weight:1.5, dashArray:'4 4'
+      color:lineColor, weight:2, dashArray:'4 4'
     }).addTo(map);
     destMarkers.push(line);
 
     var dot = L.circleMarker([dlat,dlng], {
-      radius:3, fillColor:'#CFB87C', fillOpacity:0.9,
-      color:'rgba(0,0,0,0.5)', weight:1
+      radius:3, fillColor:dotFill, fillOpacity:0.9,
+      color:dotStroke, weight:1
     }).addTo(map);
     destMarkers.push(dot);
 
