@@ -353,8 +353,10 @@ function initMap() {
 function hideMapPOIs(m) {
   var layers = m.getStyle().layers || [];
   layers.forEach(function(l) {
-    // Hide POI icons (trees, parks, etc.) — keep road/building labels
-    if (l.type === 'symbol' && l.id && /poi|park_label|park-label/i.test(l.id)) {
+    if (!l.id) return;
+    // Hide POI/icon symbol layers (trees, parks, amenities, etc.)
+    // Keep road labels, building labels, and place names
+    if (l.type === 'symbol' && /poi|icon|park|amenity|attraction/i.test(l.id)) {
       m.setLayoutProperty(l.id, 'visibility', 'none');
     }
   });
@@ -368,10 +370,12 @@ function updateMap() {
   // Clear previous markers and line layers
   if (mapMarker) { mapMarker.remove(); mapMarker = null; }
   destMarkers.forEach(function(m) {
-    if (typeof m === 'string') {
-      if (map.getLayer(m)) map.removeLayer(m);
-      if (map.getSource(m)) map.removeSource(m);
-    } else if (m && m.remove) { m.remove(); }
+    try {
+      if (typeof m === 'string') {
+        if (map.getLayer(m)) map.removeLayer(m);
+        if (map.getSource(m)) map.removeSource(m);
+      } else if (m && m.remove) { m.remove(); }
+    } catch(e) { /* layer/source already removed by style change */ }
   });
   destMarkers = [];
 
@@ -385,7 +389,7 @@ function updateMap() {
 
   // Theme-aware colors
   var isLight = document.documentElement.classList.contains('light');
-  var lineColor = isLight ? 'rgba(120,90,20,0.5)' : 'rgba(207,184,124,0.4)';
+  var lineColor = isLight ? 'rgba(80,60,10,0.6)' : 'rgba(207,184,124,0.5)';
   var dotFill = isLight ? '#7A5A14' : '#CFB87C';
   var dotStroke = isLight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.5)';
 
@@ -402,15 +406,19 @@ function updateMap() {
 
     // Dashed connecting line
     var lineId = 'dest-line-' + (lineIdx++);
-    map.addSource(lineId, {
-      type: 'geojson',
-      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng,lat],[dlng,dlat]] } }
-    });
-    map.addLayer({
-      id: lineId, type: 'line', source: lineId,
-      paint: { 'line-color': lineColor, 'line-width': 2, 'line-dasharray': [4, 4] }
-    });
-    destMarkers.push(lineId);
+    try {
+      if (map.getLayer(lineId)) map.removeLayer(lineId);
+      if (map.getSource(lineId)) map.removeSource(lineId);
+      map.addSource(lineId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng,lat],[dlng,dlat]] } }
+      });
+      map.addLayer({
+        id: lineId, type: 'line', source: lineId,
+        paint: { 'line-color': lineColor, 'line-width': 2.5, 'line-dasharray': [3, 3] }
+      });
+      destMarkers.push(lineId);
+    } catch(e) { console.warn('Line layer error:', e); }
 
     // Destination dot
     var dotEl = document.createElement('div');
