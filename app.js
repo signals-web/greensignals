@@ -410,7 +410,13 @@ function updateMap() {
       .setLngLat([dlng, dlat]).addTo(map);
     destMarkers.push(dot);
 
-    // (dest names shown in table below, not on map)
+    // Destination name label
+    var labelEl = document.createElement('div');
+    labelEl.className = 'map-dest-label';
+    labelEl.textContent = d.name;
+    var label = new maplibregl.Marker({ element: labelEl, anchor: 'bottom-left', offset: [4, -4] })
+      .setLngLat([dlng, dlat]).addTo(map);
+    destMarkers.push(label);
 
     bounds.extend([dlng, dlat]);
   });

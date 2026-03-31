@@ -132,7 +132,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .side-label.side-b { margin-top: 4px; }
 
 /* MAP DESTINATION LABELS */
-.map-dest-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: .02em; color: var(--cu-white); white-space: nowrap; pointer-events: none; background: var(--cu-dark); padding: 1px 4px; border-radius: 2px; border: 1px solid var(--cu-border); opacity: 0.9; }
+.map-dest-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .02em; color: var(--cu-white); white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px var(--cu-dark), 0 0 6px var(--cu-dark), 0 1px 2px var(--cu-dark); }
 
 .dest-table { width: 100%; border-collapse: collapse; }
 .dest-table th { font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); padding: 10px 1.5rem; text-align: left; border-bottom: 1px solid var(--cu-border); }
