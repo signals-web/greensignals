@@ -99,7 +99,7 @@ function arrowDisplay(deg) {
   if (deg === null || deg === undefined || deg === '') {
     return `<div class="arrow-display no-arrow">—</div>`;
   }
-  return `<div class="arrow-display">${arrowSVG(Number(deg), 20)}</div>`;
+  return `<div class="arrow-display">${arrowSVG(Number(deg), 14)}</div>`;
 }
 
 function arrowPickerHTML(currentDeg, rowIdx) {
@@ -352,11 +352,11 @@ function initMap() {
 }
 function hideMapPOIs(m) {
   var layers = m.getStyle().layers || [];
+  // Keep only road labels and place/city names — hide everything else with icons
+  var keepPattern = /road|street|highway|place|city|town|village|country|state|continent|housenumber|building/i;
   layers.forEach(function(l) {
     if (!l.id) return;
-    // Hide POI/icon symbol layers (trees, parks, amenities, etc.)
-    // Keep road labels, building labels, and place names
-    if (l.type === 'symbol' && /poi|icon|park|amenity|attraction/i.test(l.id)) {
+    if (l.type === 'symbol' && !keepPattern.test(l.id)) {
       m.setLayoutProperty(l.id, 'visibility', 'none');
     }
   });
@@ -413,10 +413,17 @@ function updateMap() {
         type: 'geojson',
         data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng,lat],[dlng,dlat]] } }
       });
+      // Find first symbol layer to insert lines beneath labels but above fills
+      var beforeLayer = undefined;
+      var allLayers = map.getStyle().layers || [];
+      for (var li = 0; li < allLayers.length; li++) {
+        if (allLayers[li].type === 'symbol') { beforeLayer = allLayers[li].id; break; }
+      }
       map.addLayer({
         id: lineId, type: 'line', source: lineId,
-        paint: { 'line-color': lineColor, 'line-width': 2.5, 'line-dasharray': [3, 3] }
-      });
+        paint: { 'line-color': lineColor, 'line-width': 1.5, 'line-dasharray': [4, 3] },
+        layout: { 'line-cap': 'round' }
+      }, beforeLayer);
       destMarkers.push(lineId);
     } catch(e) { console.warn('Line layer error:', e); }
 
@@ -537,6 +544,7 @@ function renderSidebar(){
 
 function buildDestTable(dests, sign, editing, facingOffset) {
   var offset = facingOffset || 0;
+  var viewRows = [];
   let html = `<table class="dest-table"><thead><tr>
     <th class="arrow-col">Arrow</th>
     <th>Destination</th>
@@ -559,13 +567,39 @@ function buildDestTable(dests, sign, editing, facingOffset) {
       if (offset && displayDeg !== null && displayDeg !== undefined) {
         displayDeg = ((Number(displayDeg) - offset) + 360) % 360;
       }
-      html+=`<tr>
-        <td>${arrowDisplay(displayDeg)}</td>
-        <td class="dest-name-cell${d.name?'':' empty'}">${escHtml(d.name)||'—'}</td>
-        <td>${d.ttd?`<span class="ttd-chip">${escHtml(d.ttd)}</span>`:''}</td>
-      </tr>`;
+      viewRows.push({ displayDeg: displayDeg, name: d.name, ttd: d.ttd });
     }
   });
+  if (!editing) {
+    // Sort by direction then group same-direction destinations
+    viewRows.sort(function(a, b) {
+      var da = a.displayDeg === null || a.displayDeg === undefined ? 999 : Number(a.displayDeg);
+      var db = b.displayDeg === null || b.displayDeg === undefined ? 999 : Number(b.displayDeg);
+      return da - db;
+    });
+    // Build groups of consecutive same-direction rows
+    var groups = [];
+    viewRows.forEach(function(r) {
+      var last = groups.length ? groups[groups.length - 1] : null;
+      var rDeg = r.displayDeg === null || r.displayDeg === undefined ? '__none__' : String(r.displayDeg);
+      if (last && last.key === rDeg) {
+        last.rows.push(r);
+      } else {
+        groups.push({ key: rDeg, deg: r.displayDeg, rows: [r] });
+      }
+    });
+    groups.forEach(function(g) {
+      g.rows.forEach(function(r, ri) {
+        html += `<tr>`;
+        if (ri === 0) {
+          html += `<td rowspan="${g.rows.length}">${arrowDisplay(g.deg)}</td>`;
+        }
+        html += `<td class="dest-name-cell${r.name?'':' empty'}">${escHtml(r.name)||'—'}</td>`;
+        html += `<td>${r.ttd?`<span class="ttd-chip">${escHtml(r.ttd)}</span>`:''}</td>`;
+        html += `</tr>`;
+      });
+    });
+  }
   if (editing) {
     html+=`<tr><td colspan="4" style="padding:10px 1.5rem"><button class="add-dest-btn" onclick="addDest()">+ add destination</button></td></tr>`;
   }
