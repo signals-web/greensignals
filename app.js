@@ -329,8 +329,8 @@ function getMapStyle() {
   var key = (window.__ENV__ && window.__ENV__.MAPTILER_KEY) || '';
   var isLight = document.documentElement.classList.contains('light');
   return isLight
-    ? 'https://api.maptiler.com/maps/dataviz-light/style.json?key=' + key
-    : 'https://api.maptiler.com/maps/dataviz-dark/style.json?key=' + key;
+    ? 'https://api.maptiler.com/maps/streets-v2-light/style.json?key=' + key
+    : 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=' + key;
 }
 function initMap() {
   var el = document.getElementById('sign-map');
@@ -366,10 +366,11 @@ function updateMap() {
   });
   destMarkers = [];
 
-  // Sign marker — em-dash rotated to facing
-  var signRot = s._facing ? DIR_DEGS[s._facing] : 0;
+  // Sign marker — em-dash perpendicular to facing direction
+  // A sign facing north runs east–west, so rotate 90° from facing bearing
+  var signRot = s._facing ? (DIR_DEGS[s._facing] + 90) % 360 : 0;
   var signEl = document.createElement('div');
-  signEl.innerHTML = '<div class="map-sign-marker" style="transform:rotate(' + signRot + 'deg)">&mdash;</div>';
+  signEl.innerHTML = '<div class="map-sign-marker" style="transform:rotate(' + signRot + 'deg)">━</div>';
   mapMarker = new maplibregl.Marker({ element: signEl, anchor: 'center' })
     .setLngLat([lng, lat]).addTo(map);
 
@@ -409,13 +410,7 @@ function updateMap() {
       .setLngLat([dlng, dlat]).addTo(map);
     destMarkers.push(dot);
 
-    // Name label
-    var labelEl = document.createElement('div');
-    labelEl.className = 'map-dest-label';
-    labelEl.textContent = d.name;
-    var label = new maplibregl.Marker({ element: labelEl, anchor: 'top-left', offset: [8, 4] })
-      .setLngLat([dlng, dlat]).addTo(map);
-    destMarkers.push(label);
+    // (dest names shown in table below, not on map)
 
     bounds.extend([dlng, dlat]);
   });
@@ -459,7 +454,6 @@ function updateMap() {
   setTimeout(function() {
     map.resize();
     map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: -rot });
-    resolveOverlaps();
   }, 200);
 }
 function mapZoom(delta) {
@@ -468,25 +462,6 @@ function mapZoom(delta) {
   var lng = parseFloat(s.lng), lat = parseFloat(s.lat);
   map.setZoom(map.getZoom() + delta);
   map.panTo([lng, lat]);
-}
-// Simple label collision resolver
-function resolveOverlaps() {
-  var labels = document.querySelectorAll('.map-dest-label');
-  if (labels.length < 2) return;
-  var rects = [];
-  for (var i = 0; i < labels.length; i++) {
-    rects.push({ el: labels[i], r: labels[i].getBoundingClientRect() });
-  }
-  for (var i = 1; i < rects.length; i++) {
-    for (var j = 0; j < i; j++) {
-      var a = rects[i].r, b = rects[j].r;
-      if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
-        var shift = b.bottom - a.top + 2;
-        rects[i].el.style.marginTop = (parseInt(rects[i].el.style.marginTop || '0') + shift) + 'px';
-        rects[i].r = rects[i].el.getBoundingClientRect();
-      }
-    }
-  }
 }
 // Estimate destination lat/lng from sign position, arrow degree, and walk time
 function estimateDestPos(signLat, signLng, deg, ttd) {
@@ -889,7 +864,7 @@ function updateOverviewMarkers() {
     const ringStyle = ringColor !== 'transparent' ? `box-shadow:0 0 0 2px ${ringColor};border-radius:50%;` : '';
 
     const iconEl = document.createElement('div');
-    iconEl.innerHTML = `<div style="width:18px;height:18px;${ringStyle}filter:drop-shadow(0 1px 4px rgba(0,0,0,.9));cursor:pointer;">${getTypeIcon(s.type)}</div>`;
+    iconEl.innerHTML = `<div style="width:18px;height:18px;${ringStyle}cursor:pointer;">${getTypeIcon(s.type)}</div>`;
 
     const destList = s.dests.slice(0,4).map(d => `<div>${escHtml(d.name)}</div>`).join('');
     const moreCount = s.dests.length > 4 ? `<div style="color:var(--cu-muted);font-size:11px">+${s.dests.length-4} more</div>` : '';
