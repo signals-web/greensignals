@@ -3,6 +3,8 @@
 // env.js is gitignored and will NOT be committed.
 
 window.__ENV__ = {
+  MAPTILER_KEY: "REPLACE_WITH_MAPTILER_KEY",
+  SHEETS_API_KEY: "REPLACE_WITH_SHEETS_API_KEY",
   FIREBASE_CONFIG: {
     apiKey: "REPLACE_WITH_API_KEY",
     authDomain: "your-project.firebaseapp.com",
