@@ -4,6 +4,7 @@
 
 cat > env.js << EOF
 window.__ENV__ = {
+  MAPTILER_KEY: "${MAPTILER_KEY}",
   FIREBASE_CONFIG: {
     apiKey: "${FIREBASE_API_KEY}",
     authDomain: "${FIREBASE_AUTH_DOMAIN}",

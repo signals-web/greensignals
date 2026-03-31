@@ -6,6 +6,17 @@ function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   document.getElementById('theme-btn').textContent = isLight ? '☾' : '☀';
   localStorage.setItem('cub_theme', isLight ? 'light' : 'dark');
+  var newStyle = getMapStyle();
+  // Switch sign card map tile style in-place
+  if (map) {
+    map.once('style.load', function() { updateMap(); });
+    map.setStyle(newStyle);
+  }
+  // Switch overview map tile style in-place
+  if (overviewMap) {
+    overviewMap.once('style.load', function() { updateOverviewMarkers(); });
+    overviewMap.setStyle(newStyle);
+  }
 }
 function initTheme() {
   const saved = localStorage.getItem('cub_theme');
@@ -313,100 +324,121 @@ function loadFromSheets(rows) {
 function togglePaste(){const el=document.getElementById('paste-area');if(el) el.style.display=el.style.display==='block'?'none':'block';}
 function loadFromPaste(){const el=document.getElementById('paste-input'); if(el) loadData(el.value);}
 
-// ── MAP ──
-function initMap() {
-  const el=document.getElementById('sign-map');
-  if(!el||map)return;
-  const s=state.filtered[state.current];
-  const lat=s?parseFloat(s.lat):40.0;
-  const lng=s?parseFloat(s.lng):-105.27;
-  map=L.map('sign-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false}).setView([lat,lng],16);
+// ── MAP (MapLibre GL JS) ──
+function getMapStyle() {
+  var key = (window.__ENV__ && window.__ENV__.MAPTILER_KEY) || '';
   var isLight = document.documentElement.classList.contains('light');
-  var tileUrl = isLight
-    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-  L.tileLayer(tileUrl,{maxZoom:19,subdomains:'abcd'}).addTo(map);
-  setTimeout(function(){map.invalidateSize();updateMap();},100);
+  return isLight
+    ? 'https://api.maptiler.com/maps/dataviz-light/style.json?key=' + key
+    : 'https://api.maptiler.com/maps/dataviz-dark/style.json?key=' + key;
+}
+function initMap() {
+  var el = document.getElementById('sign-map');
+  if (!el || map) return;
+  var s = state.filtered[state.current];
+  var lat = s ? parseFloat(s.lat) : 40.0;
+  var lng = s ? parseFloat(s.lng) : -105.27;
+  var rot = s && s._facing ? DIR_DEGS[s._facing] : 0;
+  map = new maplibregl.Map({
+    container: 'sign-map',
+    style: getMapStyle(),
+    center: [lng, lat],
+    zoom: 16,
+    bearing: -rot,
+    interactive: false,
+    attributionControl: false
+  });
+  map.on('load', function() { updateMap(); });
 }
 function updateMap() {
-  if(!map)return;
-  const s=state.filtered[state.current];if(!s)return;
-  const lat=parseFloat(s.lat),lng=parseFloat(s.lng);if(isNaN(lat)||isNaN(lng))return;
+  if (!map) return;
+  var s = state.filtered[state.current]; if (!s) return;
+  var lat = parseFloat(s.lat), lng = parseFloat(s.lng);
+  if (isNaN(lat) || isNaN(lng)) return;
 
-  // Clear previous markers and lines
-  if(mapMarker)map.removeLayer(mapMarker);
-  destMarkers.forEach(function(m){map.removeLayer(m);});
-  destMarkers=[];
+  // Clear previous markers and line layers
+  if (mapMarker) { mapMarker.remove(); mapMarker = null; }
+  destMarkers.forEach(function(m) {
+    if (typeof m === 'string') {
+      if (map.getLayer(m)) map.removeLayer(m);
+      if (map.getSource(m)) map.removeSource(m);
+    } else if (m && m.remove) { m.remove(); }
+  });
+  destMarkers = [];
 
-  // Sign marker — em-dash rotated to facing direction
+  // Sign marker — em-dash rotated to facing
   var signRot = s._facing ? DIR_DEGS[s._facing] : 0;
-  var signHtml = '<div class="map-sign-marker" style="transform:rotate('+signRot+'deg)">&mdash;</div>';
-  var signIcon = L.divIcon({html:signHtml, iconSize:[18,18], iconAnchor:[9,9], className:''});
-  mapMarker=L.marker([lat,lng],{icon:signIcon}).addTo(map);
+  var signEl = document.createElement('div');
+  signEl.innerHTML = '<div class="map-sign-marker" style="transform:rotate(' + signRot + 'deg)">&mdash;</div>';
+  mapMarker = new maplibregl.Marker({ element: signEl, anchor: 'center' })
+    .setLngLat([lng, lat]).addTo(map);
 
-  // Destination markers with labels and connecting lines
+  // Theme-aware colors
   var isLight = document.documentElement.classList.contains('light');
   var lineColor = isLight ? 'rgba(120,90,20,0.5)' : 'rgba(207,184,124,0.4)';
   var dotFill = isLight ? '#7A5A14' : '#CFB87C';
   var dotStroke = isLight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.5)';
+
+  // Destination markers with labels and connecting lines
   var hasDests = false;
-  var bounds = L.latLngBounds([[lat,lng]]);
+  var bounds = new maplibregl.LngLatBounds([lng, lat], [lng, lat]);
+  var lineIdx = 0;
   s.dests.forEach(function(d) {
-    if(!d.name) return;
+    if (!d.name) return;
     var pos = estimateDestPos(lat, lng, d.deg, d.ttd);
-    if(!pos) return;
+    if (!pos) return;
     var dlat = pos.lat, dlng = pos.lng;
     hasDests = true;
 
-    var line = L.polyline([[lat,lng],[dlat,dlng]], {
-      color:lineColor, weight:2, dashArray:'4 4'
-    }).addTo(map);
-    destMarkers.push(line);
+    // Dashed connecting line
+    var lineId = 'dest-line-' + (lineIdx++);
+    map.addSource(lineId, {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[lng,lat],[dlng,dlat]] } }
+    });
+    map.addLayer({
+      id: lineId, type: 'line', source: lineId,
+      paint: { 'line-color': lineColor, 'line-width': 2, 'line-dasharray': [4, 4] }
+    });
+    destMarkers.push(lineId);
 
-    var dot = L.circleMarker([dlat,dlng], {
-      radius:3, fillColor:dotFill, fillOpacity:0.9,
-      color:dotStroke, weight:1
-    }).addTo(map);
+    // Destination dot
+    var dotEl = document.createElement('div');
+    dotEl.style.cssText = 'width:6px;height:6px;border-radius:50%;background:'+dotFill+';border:1px solid '+dotStroke+';';
+    var dot = new maplibregl.Marker({ element: dotEl, anchor: 'center' })
+      .setLngLat([dlng, dlat]).addTo(map);
     destMarkers.push(dot);
 
-    var label = L.marker([dlat,dlng], {
-      icon: L.divIcon({
-        html: '<div class="map-dest-label">'+escHtml(d.name)+'</div>',
-        iconSize:[0,0], iconAnchor:[-8,-4], className:''
-      })
-    }).addTo(map);
+    // Name label
+    var labelEl = document.createElement('div');
+    labelEl.className = 'map-dest-label';
+    labelEl.textContent = d.name;
+    var label = new maplibregl.Marker({ element: labelEl, anchor: 'top-left', offset: [8, 4] })
+      .setLngLat([dlng, dlat]).addTo(map);
     destMarkers.push(label);
 
-    bounds.extend([dlat,dlng]);
+    bounds.extend([dlng, dlat]);
   });
 
-  // Rotate map to match sign facing direction
-  var mapEl = document.getElementById('sign-map');
+  // Native bearing rotation — no CSS hack needed
   var rot = s._facing ? DIR_DEGS[s._facing] : 0;
-  mapEl.style.transform = rot ? 'rotate(-'+rot+'deg)' : '';
 
-  // Counter-rotate labels so text stays upright
-  var labelEls = mapEl.querySelectorAll('.map-dest-label');
-  for (var li=0; li<labelEls.length; li++) {
-    labelEls[li].style.transform = rot ? 'rotate('+rot+'deg)' : '';
-  }
-
-  // North indicator when map is rotated
+  // North indicator
+  var clipEl = document.querySelector('.map-clip');
   var oldNorth = document.getElementById('map-north');
   if (oldNorth) oldNorth.remove();
-  if (rot) {
+  if (rot && clipEl) {
     var northDiv = document.createElement('div');
     northDiv.id = 'map-north';
     northDiv.className = 'map-north-indicator';
-    northDiv.style.transform = 'rotate('+rot+'deg)';
+    northDiv.style.transform = 'rotate(' + rot + 'deg)';
     northDiv.textContent = 'N';
-    mapEl.parentElement.appendChild(northDiv);
+    clipEl.appendChild(northDiv);
   }
 
-  // Zoom controls — placed in the clip wrapper (outside rotated map)
-  var clipEl = mapEl.parentElement;
+  // Zoom controls
   var zoomWrap = document.getElementById('map-zoom-wrap');
-  if (!zoomWrap) {
+  if (!zoomWrap && clipEl) {
     zoomWrap = document.createElement('div');
     zoomWrap.id = 'map-zoom-wrap';
     zoomWrap.className = 'map-zoom-controls';
@@ -414,45 +446,43 @@ function updateMap() {
     clipEl.appendChild(zoomWrap);
   }
 
-  // Center on sign, zoom to fit furthest destination
-  map.invalidateSize();
+  // Center on sign, zoom to fit destinations
   var zoom = 17;
   if (hasDests) {
-    // Calculate zoom without visible animation
-    var tempBounds = L.latLngBounds([[lat,lng]]);
-    bounds.extend([lat,lng]);
-    zoom = map.getBoundsZoom(bounds, false) - 1;
-    if (zoom > 18) zoom = 18;
-    if (zoom < 13) zoom = 13;
+    var cam = map.cameraForBounds(bounds, { padding: 30 });
+    if (cam) {
+      zoom = Math.min(Math.max(Math.floor(cam.zoom) - 1, 13), 18);
+    }
   }
-  map.setView([lat,lng], zoom, {animate:false});
-  setTimeout(function(){
-    map.invalidateSize();
-    map.setView([lat,lng], zoom, {animate:false});
-    resolveOverlaps(mapEl);
-  },200);
+  map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: -rot });
+
+  setTimeout(function() {
+    map.resize();
+    map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: -rot });
+    resolveOverlaps();
+  }, 200);
 }
 function mapZoom(delta) {
-  if(!map) return;
+  if (!map) return;
   var s = state.filtered[state.current];
-  var lat = parseFloat(s.lat), lng = parseFloat(s.lng);
-  map.setZoom(map.getZoom()+delta);
-  map.panTo([lat,lng]); // keep sign centered
+  var lng = parseFloat(s.lng), lat = parseFloat(s.lat);
+  map.setZoom(map.getZoom() + delta);
+  map.panTo([lng, lat]);
 }
-// Simple label collision resolver — nudge overlapping labels down
-function resolveOverlaps(mapEl) {
-  var labels = mapEl.querySelectorAll('.map-dest-label');
+// Simple label collision resolver
+function resolveOverlaps() {
+  var labels = document.querySelectorAll('.map-dest-label');
   if (labels.length < 2) return;
   var rects = [];
-  for (var i=0; i<labels.length; i++) {
+  for (var i = 0; i < labels.length; i++) {
     rects.push({ el: labels[i], r: labels[i].getBoundingClientRect() });
   }
-  for (var i=1; i<rects.length; i++) {
-    for (var j=0; j<i; j++) {
+  for (var i = 1; i < rects.length; i++) {
+    for (var j = 0; j < i; j++) {
       var a = rects[i].r, b = rects[j].r;
       if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) {
         var shift = b.bottom - a.top + 2;
-        rects[i].el.style.marginTop = (parseInt(rects[i].el.style.marginTop||'0') + shift) + 'px';
+        rects[i].el.style.marginTop = (parseInt(rects[i].el.style.marginTop || '0') + shift) + 'px';
         rects[i].r = rects[i].el.getBoundingClientRect();
       }
     }
@@ -644,7 +674,7 @@ function renderMain(){
   html+=`</div>`;
 
   document.getElementById('sign-view').innerHTML=html;
-  if(map){map.remove();map=null;mapMarker=null;}
+  if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}
   setTimeout(initMap,200);
 }
 
@@ -726,7 +756,7 @@ function goTo(i){
 }
 function approve()  { const s=state.filtered[state.current]; s.status='approved'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
 function flag()     { const s=state.filtered[state.current]; s.status='flagged';  s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
-function startEdit(){state.filtered[state.current].editing=true; renderMain();if(map){map.remove();map=null;mapMarker=null;}setTimeout(initMap,50);}
+function startEdit(){state.filtered[state.current].editing=true; renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
 function cancelEdit(){state.filtered[state.current].editing=false;render();}
 function saveEdit() {const s=state.filtered[state.current]; s.editing=false; s.status='edited'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s);}
 function updateDest(i,field,val){state.filtered[state.current].dests[i][field]=val;}
@@ -743,8 +773,8 @@ function setArrow(i,deg){
   }
 }
 function updateNotes(val){state.filtered[state.current].notes=val;}
-function removeDest(i){state.filtered[state.current].dests.splice(i,1);renderMain();if(map){map.remove();map=null;mapMarker=null;}setTimeout(initMap,50);}
-function addDest(){state.filtered[state.current].dests.push({deg:null,name:'',ttd:''});renderMain();if(map){map.remove();map=null;mapMarker=null;}setTimeout(initMap,50);}
+function removeDest(i){state.filtered[state.current].dests.splice(i,1);renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
+function addDest(){state.filtered[state.current].dests.push({deg:null,name:'',ttd:''});renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
 function showSummary(){const c=getCounts();alert(`Review complete!\n\n✅ Approved: ${c.approved}\n✏️  Edited: ${c.edited}\n🚩 Flagged: ${c.flagged}\n⏳ Pending: ${c.pending}\n\nUse Export to download your review CSV.`);}
 
 /**
@@ -809,20 +839,37 @@ function toggleMapView() {
 }
 
 function initOverviewMap() {
-  if (overviewMap) { overviewMap.invalidateSize(); updateOverviewMarkers(); return; }
+  if (overviewMap) { overviewMap.resize(); updateOverviewMarkers(); return; }
 
-  overviewMap = L.map('overview-map', { zoomControl: true, attributionControl: false });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(overviewMap);
+  var coords = state.signs.filter(s => s.lat && s.lng).map(s => [parseFloat(s.lng), parseFloat(s.lat)]);
+  var center = [-105.27, 40.0];
+  if (coords.length) {
+    var sumLng = 0, sumLat = 0;
+    coords.forEach(c => { sumLng += c[0]; sumLat += c[1]; });
+    center = [sumLng / coords.length, sumLat / coords.length];
+  }
 
-  const coords = state.signs.filter(s => s.lat && s.lng).map(s => [parseFloat(s.lat), parseFloat(s.lng)]);
-  if (coords.length) overviewMap.fitBounds(coords, { padding: [40, 40] });
+  overviewMap = new maplibregl.Map({
+    container: 'overview-map',
+    style: getMapStyle(),
+    center: center,
+    zoom: 15,
+    attributionControl: false
+  });
+  overviewMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
-  updateOverviewMarkers();
+  if (coords.length > 1) {
+    var bounds = new maplibregl.LngLatBounds(coords[0], coords[0]);
+    coords.forEach(c => bounds.extend(c));
+    overviewMap.fitBounds(bounds, { padding: 40 });
+  }
+
+  overviewMap.on('load', function() { updateOverviewMarkers(); });
 }
 
 function updateOverviewMarkers() {
   if (!overviewMap) return;
-  overviewMarkers.forEach(m => overviewMap.removeLayer(m));
+  overviewMarkers.forEach(m => { if (m && m.remove) m.remove(); });
   overviewMarkers = [];
 
   const c = getCounts();
@@ -841,22 +888,28 @@ function updateOverviewMarkers() {
     const ringColor = s.status==='approved'?'#30D158':s.status==='edited'?'#FFD60A':s.status==='flagged'?'#FF453A':'transparent';
     const ringStyle = ringColor !== 'transparent' ? `box-shadow:0 0 0 2px ${ringColor};border-radius:50%;` : '';
 
-    const iconHtml = `<div style="width:18px;height:18px;${ringStyle}filter:drop-shadow(0 1px 4px rgba(0,0,0,.9));">${getTypeIcon(s.type)}</div>`;
-    const icon = L.divIcon({ html: iconHtml, iconSize:[18,18], iconAnchor:[9,9], className:'' });
+    const iconEl = document.createElement('div');
+    iconEl.innerHTML = `<div style="width:18px;height:18px;${ringStyle}filter:drop-shadow(0 1px 4px rgba(0,0,0,.9));cursor:pointer;">${getTypeIcon(s.type)}</div>`;
 
     const destList = s.dests.slice(0,4).map(d => `<div>${escHtml(d.name)}</div>`).join('');
     const moreCount = s.dests.length > 4 ? `<div style="color:var(--cu-muted);font-size:11px">+${s.dests.length-4} more</div>` : '';
 
-    const popup = L.popup({ closeButton: false, maxWidth: 240, className: 'cu-popup' }).setContent(`
+    const popupHtml = `
       <div class="popup-inner">
         <div class="popup-id">${s.id}</div>
         <div class="popup-nbhd">${s.nbhd} · ${TYPE_LABELS[s.type]||s.type}</div>
         <div class="popup-dests">${destList}${moreCount}</div>
         <button class="popup-review-btn" onclick="openReviewFromMap(${globalIdx})">Review this sign →</button>
       </div>
-    `);
+    `;
 
-    const marker = L.marker([lat, lng], { icon }).bindPopup(popup).addTo(overviewMap);
+    const popup = new maplibregl.Popup({ closeButton: false, maxWidth: '240px', className: 'cu-popup' })
+      .setHTML(popupHtml);
+
+    const marker = new maplibregl.Marker({ element: iconEl, anchor: 'center' })
+      .setLngLat([lng, lat])
+      .setPopup(popup)
+      .addTo(overviewMap);
     overviewMarkers.push(marker);
   });
 }
