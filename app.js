@@ -9,12 +9,12 @@ function toggleTheme() {
   var newStyle = getMapStyle();
   // Switch sign card map tile style in-place
   if (map) {
-    map.once('style.load', function() { updateMap(); });
+    map.once('style.load', function() { hideMapPOIs(map); updateMap(); });
     map.setStyle(newStyle);
   }
   // Switch overview map tile style in-place
   if (overviewMap) {
-    overviewMap.once('style.load', function() { updateOverviewMarkers(); });
+    overviewMap.once('style.load', function() { hideMapPOIs(overviewMap); updateOverviewMarkers(); });
     overviewMap.setStyle(newStyle);
   }
 }
@@ -348,7 +348,16 @@ function initMap() {
     interactive: false,
     attributionControl: false
   });
-  map.on('load', function() { updateMap(); });
+  map.on('load', function() { hideMapPOIs(map); updateMap(); });
+}
+function hideMapPOIs(m) {
+  var layers = m.getStyle().layers || [];
+  layers.forEach(function(l) {
+    // Hide POI icons (trees, parks, etc.) — keep road/building labels
+    if (l.type === 'symbol' && l.id && /poi|park_label|park-label/i.test(l.id)) {
+      m.setLayoutProperty(l.id, 'visibility', 'none');
+    }
+  });
 }
 function updateMap() {
   if (!map) return;
@@ -622,10 +631,14 @@ function renderMain(){
   if(s.editing) {
     html+=buildDestTable(s.dests, s, true);
   } else if(hasBackSide) {
-    html+=`<div class="side-label">Side A <span class="side-hint">front${frontDir ? ' · '+frontDir : ''}</span></div>`;
+    html+=`<div class="sides-row">`;
+    html+=`<div class="side-col"><div class="side-label">Side A <span class="side-hint">front${frontDir ? ' · '+frontDir : ''}</span></div>`;
     html+=buildDestTable(sides.front, s, false, facingScreenOffset);
-    html+=`<div class="side-label side-b">Side B <span class="side-hint">back${backDir ? ' · '+backDir : ''}</span></div>`;
+    html+=`</div>`;
+    html+=`<div class="side-col"><div class="side-label side-b">Side B <span class="side-hint">back${backDir ? ' · '+backDir : ''}</span></div>`;
     html+=buildDestTable(sides.back, s, false, facingScreenOffset);
+    html+=`</div>`;
+    html+=`</div>`;
   } else {
     html+=buildDestTable(s.dests, s, false, facingScreenOffset);
   }
@@ -642,9 +655,17 @@ function renderMain(){
 
   html+=`<div class="actions">`;
   if(!s.editing){
-    html+=`<button class="action-btn btn-approve" onclick="approve()">Approve</button>`;
+    if(s.status==='approved'){
+      html+=`<button class="action-btn btn-unapprove" onclick="unapprove()">Remove approval</button>`;
+    } else {
+      html+=`<button class="action-btn btn-approve" onclick="approve()">Approve</button>`;
+    }
     html+=`<button class="action-btn btn-edit" onclick="startEdit()">Edit destinations</button>`;
-    html+=`<button class="action-btn btn-flag" onclick="flag()">Flag for discussion</button>`;
+    if(s.status==='flagged'){
+      html+=`<button class="action-btn btn-unflag" onclick="unflag()">Remove flag</button>`;
+    } else {
+      html+=`<button class="action-btn btn-flag" onclick="flag()">Flag for discussion</button>`;
+    }
   } else {
     html+=`<button class="action-btn btn-save" onclick="saveEdit()">Save edits</button>`;
     html+=`<button class="action-btn btn-cancel" onclick="cancelEdit()">Cancel</button>`;
@@ -700,17 +721,23 @@ function setFacing(dir) {
   var oldLabels = signView.querySelectorAll('.side-label');
   var oldTables = signView.querySelectorAll('.dest-table');
 
-  // Remove old side labels and tables
+  // Remove old side labels, tables, and sides-row wrapper
   oldLabels.forEach(function(el){ el.remove(); });
   oldTables.forEach(function(el){ el.remove(); });
+  var oldRow = signView.querySelector('.sides-row');
+  if (oldRow) oldRow.remove();
 
   // Build new content
   var tableHtml = '';
   if (hasBackSide) {
-    tableHtml += '<div class="side-label">Side A <span class="side-hint">front' + (frontDir ? ' · '+frontDir : '') + '</span></div>';
+    tableHtml += '<div class="sides-row">';
+    tableHtml += '<div class="side-col"><div class="side-label">Side A <span class="side-hint">front' + (frontDir ? ' · '+frontDir : '') + '</span></div>';
     tableHtml += buildDestTable(sides.front, s, false, facingOffset);
-    tableHtml += '<div class="side-label side-b">Side B <span class="side-hint">back' + (backDir ? ' · '+backDir : '') + '</span></div>';
+    tableHtml += '</div>';
+    tableHtml += '<div class="side-col"><div class="side-label side-b">Side B <span class="side-hint">back' + (backDir ? ' · '+backDir : '') + '</span></div>';
     tableHtml += buildDestTable(sides.back, s, false, facingOffset);
+    tableHtml += '</div>';
+    tableHtml += '</div>';
   } else {
     tableHtml += buildDestTable(s.dests, s, false, facingOffset);
   }
@@ -735,8 +762,10 @@ function goTo(i){
   state.current=i; render();
   document.querySelector('.main-panel').scrollTo({top:0,behavior:'smooth'});
 }
-function approve()  { const s=state.filtered[state.current]; s.status='approved'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
-function flag()     { const s=state.filtered[state.current]; s.status='flagged';  s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
+function approve()    { const s=state.filtered[state.current]; s.status='approved'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
+function unapprove()  { const s=state.filtered[state.current]; s.status='pending';  s.reviewedBy=''; render(); syncToSheet(s); }
+function flag()       { const s=state.filtered[state.current]; s.status='flagged';  s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
+function unflag()     { const s=state.filtered[state.current]; s.status='pending';  s.reviewedBy=''; render(); syncToSheet(s); }
 function startEdit(){state.filtered[state.current].editing=true; renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
 function cancelEdit(){state.filtered[state.current].editing=false;render();}
 function saveEdit() {const s=state.filtered[state.current]; s.editing=false; s.status='edited'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s);}
@@ -845,7 +874,7 @@ function initOverviewMap() {
     overviewMap.fitBounds(bounds, { padding: 40 });
   }
 
-  overviewMap.on('load', function() { updateOverviewMarkers(); });
+  overviewMap.on('load', function() { hideMapPOIs(overviewMap); updateOverviewMarkers(); });
 }
 
 function updateOverviewMarkers() {

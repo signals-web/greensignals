@@ -127,16 +127,21 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 
 /* TABLE */
 /* SIDE LABELS (double-sided signs) */
-.side-label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-accent); padding: 10px 1.5rem 0; border-top: 1px solid var(--cu-border); }
+.sides-row { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--cu-border); }
+.side-col { min-width: 0; }
+.side-col + .side-col { border-left: 1px solid var(--cu-border); }
+.side-label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cu-accent); padding: 10px 1rem 0; }
 .side-label .side-hint { font-weight: 400; color: var(--cu-muted); margin-left: 6px; }
-.side-label.side-b { margin-top: 4px; }
+.side-label.side-b { margin-top: 0; }
 
 /* MAP DESTINATION LABELS */
 .map-dest-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .02em; color: var(--cu-white); white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px var(--cu-dark), 0 0 6px var(--cu-dark), 0 1px 2px var(--cu-dark); }
 
 .dest-table { width: 100%; border-collapse: collapse; }
-.dest-table th { font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); padding: 10px 1.5rem; text-align: left; border-bottom: 1px solid var(--cu-border); }
-.dest-table td { padding: 10px 1.5rem; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
+.dest-table th { font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); padding: 10px 1rem; text-align: left; border-bottom: 1px solid var(--cu-border); }
+.dest-table td { padding: 10px 1rem; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
+.side-col .dest-table td, .side-col .dest-table th { padding-left: 1rem; padding-right: .75rem; }
+.side-col .dest-table td:last-child, .side-col .dest-table th:last-child { padding-right: 1rem; }
 .dest-table tr:last-child td { border-bottom: none; }
 .dest-table tr:hover td { background: rgba(255,255,255,.02); }
 
@@ -187,6 +192,10 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .btn-edit:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
 .btn-flag { background: var(--flag-bg); border-color: rgba(255,69,58,.3); color: var(--flag); }
 .btn-flag:hover { background: rgba(255,69,58,.2); }
+.btn-unapprove { background: transparent; border-color: var(--approve); color: var(--approve); }
+.btn-unapprove:hover { background: rgba(48,209,88,.1); }
+.btn-unflag { background: transparent; border-color: var(--flag); color: var(--flag); }
+.btn-unflag:hover { background: rgba(255,69,58,.1); }
 .btn-save { background: var(--edit-bg); border-color: rgba(255,214,10,.3); color: var(--edit); }
 .btn-save:hover { background: rgba(255,214,10,.2); }
 .btn-cancel { background: transparent; border-color: var(--cu-border); color: var(--cu-muted); }
