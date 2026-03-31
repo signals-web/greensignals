@@ -644,7 +644,70 @@ function renderMain(){
 function setFacing(dir) {
   const s = state.filtered[state.current];
   s._facing = dir;
-  renderMain();
+
+  // Update facing buttons without full re-render
+  var btns = document.querySelectorAll('.facing-btn');
+  btns.forEach(function(btn) {
+    var isActive = btn.textContent === dir;
+    btn.classList.toggle('active', isActive);
+  });
+
+  // Update compass icon
+  var compassEl = document.querySelector('.facing-compass');
+  if (compassEl) compassEl.innerHTML = facingCompassSvg(dir);
+
+  // Show/hide clear button
+  var picker = document.querySelector('.facing-btns');
+  var existing = picker ? picker.querySelector('.facing-clear') : null;
+  if (dir && !existing && picker) {
+    var clearBtn = document.createElement('button');
+    clearBtn.className = 'facing-btn facing-clear';
+    clearBtn.onclick = function(){ setFacing(null); };
+    clearBtn.innerHTML = '&times;';
+    picker.appendChild(clearBtn);
+  } else if (!dir && existing) {
+    existing.remove();
+  }
+
+  // Re-split destinations and rebuild tables
+  var sides = splitSides(s.dests, dir);
+  var hasBackSide = sides.back.length > 0;
+  var frontDir = dir || '';
+  var backDir = dir ? OPPOSITE_DIR[dir] : '';
+  var facingOffset = dir ? DIR_DEGS[dir] : 0;
+
+  // Find the dest table container (between header and actions)
+  var signView = document.getElementById('sign-view');
+  var oldLabels = signView.querySelectorAll('.side-label');
+  var oldTables = signView.querySelectorAll('.dest-table');
+
+  // Remove old side labels and tables
+  oldLabels.forEach(function(el){ el.remove(); });
+  oldTables.forEach(function(el){ el.remove(); });
+
+  // Build new content
+  var tableHtml = '';
+  if (hasBackSide) {
+    tableHtml += '<div class="side-label">Side A <span class="side-hint">front' + (frontDir ? ' · '+frontDir : '') + '</span></div>';
+    tableHtml += buildDestTable(sides.front, s, false, facingOffset);
+    tableHtml += '<div class="side-label side-b">Side B <span class="side-hint">back' + (backDir ? ' · '+backDir : '') + '</span></div>';
+    tableHtml += buildDestTable(sides.back, s, false, facingOffset);
+  } else {
+    tableHtml += buildDestTable(s.dests, s, false, facingOffset);
+  }
+
+  // Insert after the sign-card header (the .sign-card div)
+  var signCard = signView.querySelector('.sign-card');
+  if (signCard) {
+    // Insert tables as first children after the header
+    var headerEl = signCard.querySelector('.sign-card-header');
+    if (headerEl) {
+      headerEl.insertAdjacentHTML('afterend', tableHtml);
+    }
+  }
+
+  // Update map rotation and marker without recreating map
+  if (map) updateMap();
 }
 
 function goTo(i){

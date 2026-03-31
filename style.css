@@ -110,8 +110,9 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .facing-clear { color: var(--cu-border); font-size: 12px; padding: 3px 6px; }
 .facing-clear:hover { color: var(--flag); border-color: var(--flag); }
 
-.map-clip { overflow: hidden; width: 100%; aspect-ratio: 1 / 1; position: relative; }
+.map-clip { overflow: hidden; width: 100%; aspect-ratio: 1 / 1; position: relative; background: var(--cu-dark); }
 #sign-map { width: 142%; height: 142%; position: absolute; top: -21%; left: -21%; transform-origin: center center; }
+#sign-map .leaflet-container { background: var(--cu-dark); }
 .map-sign-marker { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: var(--cu-gold); text-shadow: 0 1px 3px rgba(0,0,0,.9), 0 0 6px rgba(0,0,0,.6); line-height: 1; }
 .map-north-indicator { position: absolute; top: 8px; left: 8px; z-index: 1000; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--cu-gold); background: rgba(28,28,30,0.85); border: 1px solid var(--cu-border); border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 .map-zoom-controls { position: absolute; bottom: 8px; right: 8px; z-index: 1000; display: flex; flex-direction: column; gap: 1px; }
