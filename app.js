@@ -703,9 +703,46 @@ function renderMain(){
     :`<button class="action-btn btn-next" onclick="showSummary()">Review complete ✓</button>`;
   html+=`</div>`;
 
+  // ── COMMENT THREAD ──
+  html+=`<div class="comment-section">
+    <div class="comment-header" onclick="toggleComments()">
+      <span class="comment-header-label">Discussion</span>
+      <span class="comment-count" id="comment-count"></span>
+      <span class="comment-toggle" id="comment-toggle">▼</span>
+    </div>
+    <div class="comment-thread" id="comment-thread" style="display:none"></div>
+    <div class="comment-input-row" id="comment-input-row" style="display:none">
+      <input class="comment-input" id="comment-input" placeholder="Add a comment..." maxlength="500" onkeydown="if(event.key==='Enter')postComment()">
+      <button class="comment-send-btn" onclick="postComment()">Post</button>
+    </div>
+  </div>`;
+
   document.getElementById('sign-view').innerHTML=html;
   if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}
   setTimeout(initMap,200);
+  // Load comments for this sign from Firebase
+  if (typeof loadComments === 'function') loadComments(s.id);
+}
+
+var commentsOpen = false;
+function toggleComments() {
+  commentsOpen = !commentsOpen;
+  document.getElementById('comment-thread').style.display = commentsOpen ? '' : 'none';
+  document.getElementById('comment-input-row').style.display = commentsOpen ? '' : 'none';
+  document.getElementById('comment-toggle').textContent = commentsOpen ? '▲' : '▼';
+}
+
+function postComment() {
+  var input = document.getElementById('comment-input');
+  var text = input ? input.value.trim() : '';
+  if (!text) return;
+  var s = state.filtered[state.current];
+  requireReviewer(function() {
+    if (typeof fbPostComment === 'function') {
+      fbPostComment(s.id, text, getReviewer());
+      input.value = '';
+    }
+  });
 }
 
 // ── ACTIONS ──
