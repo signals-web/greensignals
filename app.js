@@ -366,11 +366,11 @@ function updateMap() {
   });
   destMarkers = [];
 
-  // Sign marker — em-dash perpendicular to facing direction
-  // A sign facing north runs east–west, so rotate 90° from facing bearing
-  var signRot = s._facing ? (DIR_DEGS[s._facing] + 90) % 360 : 0;
+  // Sign marker — horizontal bar representing sign panel
+  // Map bearing already rotates to face the right direction,
+  // so the panel always appears as a horizontal bar (perpendicular to "up")
   var signEl = document.createElement('div');
-  signEl.innerHTML = '<div class="map-sign-marker" style="transform:rotate(' + signRot + 'deg)">━</div>';
+  signEl.innerHTML = '<div class="map-sign-marker">━</div>';
   mapMarker = new maplibregl.Marker({ element: signEl, anchor: 'center' })
     .setLngLat([lng, lat]).addTo(map);
 
