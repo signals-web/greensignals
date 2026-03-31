@@ -113,6 +113,12 @@ function saveUserName() {
   localStorage.setItem('cub_reviewer_name', name);
   document.getElementById('user-prompt-overlay').style.display = 'none';
   updateReviewerChip();
+  // Run pending action if any
+  if (window._pendingReviewAction) {
+    const fn = window._pendingReviewAction;
+    window._pendingReviewAction = null;
+    fn();
+  }
 }
 
 function updateReviewerChip() {
@@ -122,7 +128,15 @@ function updateReviewerChip() {
 }
 
 function getReviewer() {
-  return localStorage.getItem('cub_reviewer_name') || 'Anonymous';
+  return localStorage.getItem('cub_reviewer_name') || '';
+}
+
+// Gate: require name before any review action
+function requireReviewer(callback) {
+  if (getReviewer()) { callback(); return; }
+  // Store callback to run after name is set
+  window._pendingReviewAction = callback;
+  promptUserName();
 }
 
 // ── ACTIVITY FEED TOGGLE ──

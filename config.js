@@ -36,7 +36,13 @@
   // ── Set global config ──
   config.key = projectKey;
   window.PROJECT = config;
-  console.log(`Config: loaded project "${projectKey}" (${config.name})`);
+  window.IS_ADMIN = params.get('admin') === 'true';
+  console.log(`Config: loaded project "${projectKey}" (${config.name})${window.IS_ADMIN ? ' [ADMIN]' : ''}`);
+
+  // ── Hide admin-only elements for reviewers ──
+  if (!window.IS_ADMIN) {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+  }
 
   // ── Apply branding ──
   document.title = config.title;
@@ -62,11 +68,9 @@
   // Inject the full load screen UI with project branding
   const screen = document.getElementById('load-screen');
   if (screen) {
-    screen.innerHTML = `
-      <div class="load-logo"><span>${config.brand}</span> · ${config.studio}</div>
-      <div class="load-title">Sign Messaging Review</div>
-      <div class="load-subtitle">Connect to Google Sheets or load a CSV to begin</div>
+    const isAdmin = window.IS_ADMIN;
 
+    const sheetsBtn = `
       <button class="sheets-connect-btn" id="sheets-connect-btn" onclick="connectToSheets()">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path d="M19.3 3H14V0L9 5l5 5V7h4.3c1 0 1.7.7 1.7 1.7v6.6c0 1-.7 1.7-1.7 1.7H4.7C3.7 17 3 16.3 3 15.3V8.7C3 7.7 3.7 7 4.7 7H7V3H4.7C1.6 3 0 4.7 0 7.7v8.6C0 19.3 1.6 21 4.7 21h14.6c3.1 0 4.7-1.7 4.7-4.7V7.7C24 4.7 22.4 3 19.3 3z" fill="currentColor"/>
@@ -88,7 +92,17 @@
       <div id="paste-area">
         <textarea id="paste-input" placeholder="Paste CSV content here..."></textarea>
         <button class="paste-btn" onclick="loadFromPaste()">Load pasted data</button>
-      </div>
+      </div>`;
+
+    const reviewerLoad = `
+      <div class="load-subtitle" style="margin-bottom:1.5rem">Loading sign data...</div>
+      <div style="font-size:13px;color:var(--cu-muted)">Data is loaded automatically from the project database.<br>If this takes too long, contact your SIGNALS project manager.</div>`;
+
+    screen.innerHTML = `
+      <div class="load-logo"><span>${config.brand}</span> · ${config.studio}</div>
+      <div class="load-title">Sign Messaging Review</div>
+      <div class="load-subtitle">${isAdmin ? 'Connect to Google Sheets or load a CSV to begin' : 'Welcome, reviewer'}</div>
+      ${isAdmin ? sheetsBtn : reviewerLoad}
     `;
 
     // Re-attach file input and drag/drop listeners (since DOM was replaced)

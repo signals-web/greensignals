@@ -317,13 +317,72 @@ function showSyncToast(message, type) {
   }, 3000);
 }
 
+// ── PUBLIC READ (no OAuth — for reviewers) ──
+// Reads from a published Google Sheet using API key
+async function fetchPublicSheetData() {
+  const sheetId = getSheetId();
+  const sheetTab = getSheetTab();
+  const apiKey = (window.__ENV__ && window.__ENV__.SHEETS_API_KEY) || '';
+
+  if (!apiKey || !sheetId) {
+    console.warn('Public sheet read: missing API key or sheet ID');
+    return false;
+  }
+
+  try {
+    const range = `${sheetTab}!A:AO`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+    const resp = await fetch(url);
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error('Public sheet read failed:', err);
+      return false;
+    }
+
+    const data = await resp.json();
+    const rows = data.values;
+
+    if (!rows || rows.length < 2) {
+      console.warn('Public sheet: no data found');
+      return false;
+    }
+
+    console.log(`Public sheet: loaded ${rows.length - 1} rows`);
+    loadFromSheets(rows);
+    return true;
+  } catch (err) {
+    console.error('Public sheet error:', err);
+    return false;
+  }
+}
+
 // ── INITIALIZE ON LOAD ──
 // Wait for project config to be ready, then init Sheets auth
 function _initSheetsWhenReady() {
   if (window.PROJECT_READY) {
-    initSheetsAuth();
+    if (window.IS_ADMIN) {
+      initSheetsAuth();
+    } else {
+      // Non-admin: try loading from saved session first, then public sheet
+      if (!loadSession()) {
+        fetchPublicSheetData().then(ok => {
+          if (!ok) showSyncToast('Could not load data. Ask your admin for a CSV.', 'error');
+        });
+      }
+    }
   } else {
-    window.addEventListener('project-ready', () => initSheetsAuth(), { once: true });
+    window.addEventListener('project-ready', () => {
+      if (window.IS_ADMIN) {
+        initSheetsAuth();
+      } else {
+        if (!loadSession()) {
+          fetchPublicSheetData().then(ok => {
+            if (!ok) showSyncToast('Could not load data. Ask your admin for a CSV.', 'error');
+          });
+        }
+      }
+    }, { once: true });
   }
 }
 if (document.readyState === 'loading') {

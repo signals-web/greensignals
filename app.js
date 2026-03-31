@@ -762,13 +762,13 @@ function goTo(i){
   state.current=i; render();
   document.querySelector('.main-panel').scrollTo({top:0,behavior:'smooth'});
 }
-function approve()    { const s=state.filtered[state.current]; s.status='approved'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
-function unapprove()  { const s=state.filtered[state.current]; s.status='pending';  s.reviewedBy=''; render(); syncToSheet(s); }
-function flag()       { const s=state.filtered[state.current]; s.status='flagged';  s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s); }
-function unflag()     { const s=state.filtered[state.current]; s.status='pending';  s.reviewedBy=''; render(); syncToSheet(s); }
+function approve()    { requireReviewer(function(){ const s=state.filtered[state.current]; s.status='approved'; s.reviewedBy=getReviewer(); render(); syncToSheet(s); }); }
+function unapprove()  { requireReviewer(function(){ const s=state.filtered[state.current]; s.status='pending';  s.reviewedBy=''; render(); syncToSheet(s); }); }
+function flag()       { requireReviewer(function(){ const s=state.filtered[state.current]; s.status='flagged';  s.reviewedBy=getReviewer(); render(); syncToSheet(s); }); }
+function unflag()     { requireReviewer(function(){ const s=state.filtered[state.current]; s.status='pending';  s.reviewedBy=''; render(); syncToSheet(s); }); }
 function startEdit(){state.filtered[state.current].editing=true; renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
 function cancelEdit(){state.filtered[state.current].editing=false;render();}
-function saveEdit() {const s=state.filtered[state.current]; s.editing=false; s.status='edited'; s.reviewedBy=typeof getReviewer==='function'?getReviewer():''; render(); syncToSheet(s);}
+function saveEdit() { requireReviewer(function(){ const s=state.filtered[state.current]; s.editing=false; s.status='edited'; s.reviewedBy=getReviewer(); render(); syncToSheet(s); }); }
 function updateDest(i,field,val){state.filtered[state.current].dests[i][field]=val;}
 function setArrow(i,deg){
   state.filtered[state.current].dests[i].deg=deg;
