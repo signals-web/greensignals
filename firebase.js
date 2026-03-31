@@ -96,6 +96,7 @@ function _initFirebase() {
     window.loadComments = function(signId) {
       const safeId = signId.replace(/[.#$/[\]]/g, '_');
       const commentRef = ref(db, `projects/${projectPath}/comments/${safeId}`);
+      window._currentCommentSignId = safeId;
       // Detach previous listener
       if (_commentUnsub) { _commentUnsub(); _commentUnsub = null; }
       _commentUnsub = onValue(commentRef, (snapshot) => {
@@ -108,15 +109,50 @@ function _initFirebase() {
           if (count) count.textContent = '';
           return;
         }
-        const comments = Object.values(data).filter(c => c.ts).sort((a, b) => a.ts - b.ts);
-        if (count) count.textContent = comments.length;
-        thread.innerHTML = comments.map(c =>
-          `<div class="comment-item">
-            <div class="comment-meta"><strong>${_escComment(c.author)}</strong><span class="comment-time">${_timeAgo(c.ts)}</span></div>
+        const entries = Object.entries(data).filter(([,c]) => c.ts).sort((a, b) => a[1].ts - b[1].ts);
+        const active = entries.filter(([,c]) => !c.resolved);
+        if (count) count.textContent = active.length || '';
+        thread.innerHTML = entries.map(([key, c]) => {
+          const resolved = c.resolved ? ' resolved' : '';
+          return `<div class="comment-item${resolved}">
+            <div class="comment-meta">
+              <strong>${_escComment(c.author)}</strong>
+              <span class="comment-time">${_timeAgo(c.ts)}</span>
+              <span class="comment-actions">
+                ${c.resolved
+                  ? `<button class="comment-action-btn" onclick="fbUnresolveComment('${key}')">reopen</button>`
+                  : `<button class="comment-action-btn" onclick="fbResolveComment('${key}')">resolve</button>`}
+                <button class="comment-action-btn" onclick="fbDeleteComment('${key}')">delete</button>
+              </span>
+            </div>
             <div class="comment-text">${_escComment(c.text)}</div>
-          </div>`
-        ).join('');
+          </div>`;
+        }).join('');
         thread.scrollTop = thread.scrollHeight;
+      });
+    };
+
+    window.fbResolveComment = function(key) {
+      const safeId = window._currentCommentSignId;
+      if (!safeId) return;
+      import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ ref: dbRef, update }) => {
+        update(dbRef(db, `projects/${projectPath}/comments/${safeId}/${key}`), { resolved: true });
+      });
+    };
+
+    window.fbUnresolveComment = function(key) {
+      const safeId = window._currentCommentSignId;
+      if (!safeId) return;
+      import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ ref: dbRef, update }) => {
+        update(dbRef(db, `projects/${projectPath}/comments/${safeId}/${key}`), { resolved: false });
+      });
+    };
+
+    window.fbDeleteComment = function(key) {
+      const safeId = window._currentCommentSignId;
+      if (!safeId) return;
+      import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ ref: dbRef, remove: fbRemove }) => {
+        fbRemove(dbRef(db, `projects/${projectPath}/comments/${safeId}/${key}`));
       });
     };
 
