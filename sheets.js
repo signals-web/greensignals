@@ -71,6 +71,7 @@ function initSheetsAuth() {
 }
 
 function handleTokenResponse(response) {
+  clearTimeout(window._sheetsConnectTimeout);
   if (response.error) {
     console.error('Sheets auth error:', response);
     showSyncToast('Auth failed: ' + (response.error_description || response.error), 'error');
@@ -94,6 +95,12 @@ function connectToSheets() {
   }
 
   setSheetsButtonLoading(true);
+
+  // Reset button if consent popup is closed or takes too long
+  clearTimeout(window._sheetsConnectTimeout);
+  window._sheetsConnectTimeout = setTimeout(function() {
+    if (!accessToken) setSheetsButtonLoading(false);
+  }, 15000);
 
   // Request access token — opens Google consent popup
   tokenClient.requestAccessToken({ prompt: '' });
