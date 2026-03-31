@@ -94,15 +94,11 @@
         <button class="paste-btn" onclick="loadFromPaste()">Load pasted data</button>
       </div>`;
 
-    const reviewerLoad = `
-      <div class="load-subtitle" style="margin-bottom:1.5rem">Loading sign data...</div>
-      <div style="font-size:13px;color:var(--cu-muted)">Data is loaded automatically from the project database.<br>If this takes too long, contact your SIGNALS project manager.</div>`;
-
     screen.innerHTML = `
       <div class="load-logo"><span>${config.brand}</span> · ${config.studio}</div>
       <div class="load-title">Sign Messaging Review</div>
-      <div class="load-subtitle">${isAdmin ? 'Connect to Google Sheets or load a CSV to begin' : 'Welcome, reviewer'}</div>
-      ${isAdmin ? sheetsBtn : reviewerLoad}
+      <div class="load-subtitle">Connect to Google Sheets or load a CSV to begin</div>
+      ${sheetsBtn}
     `;
 
     // Re-attach file input and drag/drop listeners (since DOM was replaced)

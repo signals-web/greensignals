@@ -360,28 +360,12 @@ async function fetchPublicSheetData() {
 // ── INITIALIZE ON LOAD ──
 // Wait for project config to be ready, then init Sheets auth
 function _initSheetsWhenReady() {
+  // All users (admin + reviewer) use OAuth to connect to Sheets
   if (window.PROJECT_READY) {
-    if (window.IS_ADMIN) {
-      initSheetsAuth();
-    } else {
-      // Non-admin: try loading from saved session first, then public sheet
-      if (!loadSession()) {
-        fetchPublicSheetData().then(ok => {
-          if (!ok) showSyncToast('Could not load data. Ask your admin for a CSV.', 'error');
-        });
-      }
-    }
+    initSheetsAuth();
   } else {
     window.addEventListener('project-ready', () => {
-      if (window.IS_ADMIN) {
-        initSheetsAuth();
-      } else {
-        if (!loadSession()) {
-          fetchPublicSheetData().then(ok => {
-            if (!ok) showSyncToast('Could not load data. Ask your admin for a CSV.', 'error');
-          });
-        }
-      }
+      initSheetsAuth();
     }, { once: true });
   }
 }
