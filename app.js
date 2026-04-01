@@ -103,18 +103,17 @@ function arrowDisplay(deg) {
 }
 
 function arrowPickerHTML(currentDeg, rowIdx) {
-  // Compact inline picker — 8 directional arrows + none, single row
-  var arrows = DIRECTIONS.filter(function(d){ return d.deg !== null; });
-  var noneDir = DIRECTIONS.find(function(d){ return d.deg === null; });
-  var isNoneSel = currentDeg === null || currentDeg === '' || currentDeg === undefined;
-  var html = '<div class="arrow-picker-compact">';
-  arrows.forEach(function(d) {
-    var isSel = Number(currentDeg) === d.deg;
-    html += '<button class="arrow-pick-c' + (isSel ? ' selected' : '') + '" onclick="setArrow(' + rowIdx + ',' + d.deg + ')" title="' + d.label + '">' + arrowSVG(d.deg, 10) + '</button>';
-  });
-  html += '<button class="arrow-pick-c no-arrow-c' + (isNoneSel ? ' selected' : '') + '" onclick="setArrow(' + rowIdx + ',null)" title="No arrow">—</button>';
-  html += '</div>';
-  return html;
+  return '<div class="arrow-picker-compact">' +
+    DIRECTIONS.map(function(d) {
+      var isNone = d.deg === null;
+      var isSel = isNone ? (currentDeg === null || currentDeg === '' || currentDeg === undefined) : (Number(currentDeg) === d.deg);
+      var cls = 'arrow-pick-c' + (isSel ? ' selected' : '') + (isNone ? ' no-arrow-c' : '');
+      if (isNone) {
+        return '<button class="' + cls + '" onclick="setArrow(' + rowIdx + ',null)" title="No arrow">—</button>';
+      }
+      return '<button class="' + cls + '" onclick="setArrow(' + rowIdx + ',' + d.deg + ')" title="' + d.label + '">' + arrowSVG(d.deg, 9) + '</button>';
+    }).join('') +
+  '</div>';
 }
 
 // ── SIGN TYPE ICONS (inline SVG) ──
