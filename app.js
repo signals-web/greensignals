@@ -568,7 +568,7 @@ function updateMap() {
     bounds.extend([dlng, dlat]);
   });
 
-  // Nearby signs — two-tier markers: relevant (shared dests) with full icons, context (just nearby) with gray dots
+  // Nearby signs — ghosted markers at 50% size/opacity
   var currentDestNames = new Set(s.dests.map(function(d) { return (d.name || '').trim().toLowerCase(); }));
   var nearbyRadius = 0.003; // ~300m in degrees at 40°N
   state.signs.forEach(function(ns) {
@@ -592,16 +592,10 @@ function updateMap() {
       '</div>';
 
     var ghostEl = document.createElement('div');
-    if (hasShared) {
-      // Relevant: full type icon, semi-transparent
-      ghostEl.className = 'nearby-marker relevant';
-      ghostEl.innerHTML = getTypeIcon(ns.type);
-    } else {
-      // Context: small gray dot
-      ghostEl.className = 'nearby-marker context';
-    }
+    ghostEl.className = 'nearby-marker';
+    ghostEl.innerHTML = getTypeIcon(ns.type);
 
-    var popup = new maplibregl.Popup({ closeButton: false, maxWidth: '200px', className: 'nearby-sign-popup', offset: hasShared ? 12 : 6 })
+    var popup = new maplibregl.Popup({ closeButton: false, maxWidth: '200px', className: 'nearby-sign-popup', offset: 8 })
       .setHTML(popupContent);
 
     var marker = new maplibregl.Marker({ element: ghostEl, anchor: 'center' })
@@ -717,7 +711,7 @@ function getCounts() {
 }
 
 // ── RENDER ──
-function render(){renderSidebar();renderMain();renderInspector();updateMap();saveSession();}
+function render(){renderSidebar();renderMain();renderRightPanel();updateMap();saveSession();}
 
 function renderSidebar(){
   const c=getCounts();
@@ -901,7 +895,6 @@ function renderMain(){
     html+=`<button class="action-btn btn-save" onclick="saveEdit()">Save edits</button>`;
     html+=`<button class="action-btn btn-cancel" onclick="cancelEdit()">Cancel</button>`;
   }
-  html+=`<button class="action-btn btn-inspect" onclick="toggleInspector()">ⓘ Details</button>`;
   html+=state.current<state.filtered.length-1
     ?`<button class="action-btn btn-next" onclick="goTo(state.current+1)">Next sign →</button>`
     :`<button class="action-btn btn-next" onclick="showSummary()">Review complete ✓</button>`;
@@ -1102,8 +1095,9 @@ function toggleMapView() {
   const overviewPanel = document.getElementById('map-overview');
   const btn = document.getElementById('map-toggle-btn');
 
+  var rp = document.getElementById('right-panel');
   if (mapViewActive) {
-    // Close freq report if open
+    // Close other views
     if (freqViewActive) {
       freqViewActive = false;
       document.getElementById('freq-report').classList.remove('visible');
@@ -1111,13 +1105,16 @@ function toggleMapView() {
       freqBtn.style.borderColor = '';
       freqBtn.style.color = '';
     }
+    if (bnViewActive) { bnViewActive = false; document.getElementById('building-names').classList.remove('visible'); }
     mainPanel.style.display = 'none';
+    if (rp) rp.style.display = 'none';
     overviewPanel.classList.add('visible');
     btn.style.borderColor = 'var(--cu-gold)';
     btn.style.color = 'var(--cu-gold)';
     initOverviewMap();
   } else {
     mainPanel.style.display = '';
+    if (rp) rp.style.display = '';
     overviewPanel.classList.remove('visible');
     btn.style.borderColor = '';
     btn.style.color = '';
@@ -1222,15 +1219,18 @@ function toggleFreqReport() {
   const freqBtn = document.getElementById('freq-toggle-btn');
   const mapBtn = document.getElementById('map-toggle-btn');
 
+  var rp = document.getElementById('right-panel');
   if (freqViewActive) {
-    // Close map view if open
+    // Close other views
     if (mapViewActive) {
       mapViewActive = false;
       mapPanel.classList.remove('visible');
       mapBtn.style.borderColor = '';
       mapBtn.style.color = '';
     }
+    if (bnViewActive) { bnViewActive = false; document.getElementById('building-names').classList.remove('visible'); }
     mainPanel.style.display = 'none';
+    if (rp) rp.style.display = 'none';
     freqPanel.classList.add('visible');
     freqBtn.style.borderColor = 'var(--cu-gold)';
     freqBtn.style.color = 'var(--cu-gold)';
@@ -1238,6 +1238,7 @@ function toggleFreqReport() {
     updateFreqReport();
   } else {
     mainPanel.style.display = '';
+    if (rp) rp.style.display = '';
     freqPanel.classList.remove('visible');
     freqBtn.style.borderColor = '';
     freqBtn.style.color = '';
@@ -1348,6 +1349,8 @@ function freqViewSigns(buildingName) {
   freqViewActive = false;
   document.getElementById('freq-report').classList.remove('visible');
   document.getElementById('main-panel').style.display = '';
+  var rp = document.getElementById('right-panel');
+  if (rp) rp.style.display = '';
   var btn = document.getElementById('freq-toggle-btn');
   btn.style.borderColor = '';
   btn.style.color = '';
@@ -1396,81 +1399,51 @@ function getNearbySignData(currentSign) {
     .slice(0, 8);
 }
 
-function renderInspector() {
-  var panel = document.getElementById('inspector');
-  if (!panel || panel.classList.contains('hidden')) return;
+function renderRightPanel() {
   var s = state.filtered[state.current];
   if (!s) return;
-
-  // Properties
-  var statusLabel = s.status.charAt(0).toUpperCase() + s.status.slice(1);
-  var statusBadge = '<span class="insp-status-badge insp-badge-' + s.status + '">' + statusLabel + '</span>';
-  var propsHtml =
-    '<div class="insp-prop"><span class="insp-prop-label">Status</span><span class="insp-prop-value">' + statusBadge + '</span></div>' +
-    '<div class="insp-prop"><span class="insp-prop-label">Type</span><span class="insp-prop-value">' + (TYPE_LABELS[s.type] || s.type) + '</span></div>' +
-    '<div class="insp-prop"><span class="insp-prop-label">Zone</span><span class="insp-prop-value">' + escHtml(s.nbhd) + '</span></div>' +
-    '<div class="insp-prop"><span class="insp-prop-label">Facing</span><span class="insp-prop-value">' + (s._facing || '—') + '</span></div>' +
-    '<div class="insp-prop"><span class="insp-prop-label">Reviewed by</span><span class="insp-prop-value">' + (s.reviewedBy ? escHtml(s.reviewedBy) : '—') + '</span></div>' +
-    '<div class="insp-prop"><span class="insp-prop-label">Destinations</span><span class="insp-prop-value">' + s.dests.length + '</span></div>';
-  var propsEl = document.getElementById('insp-properties-body');
-  if (propsEl) propsEl.innerHTML = propsHtml;
 
   // Nearby signs — only those sharing destinations
   var nearby = getNearbySignData(s);
   var nearbyHtml = '';
   if (nearby.length === 0) {
-    nearbyHtml = '<div class="insp-nearby-empty">No nearby signs share destinations</div>';
+    nearbyHtml = '<div class="rp-nearby-empty">No nearby signs share destinations</div>';
   } else {
     nearby.forEach(function(n) {
       var idx = state.filtered.indexOf(n.sign);
       var clickAttr = idx >= 0 ? ' onclick="goTo(' + idx + ')"' : '';
-      var sharedBadge = '<span class="insp-nearby-shared">' + n.sharedCount + ' shared</span>';
-      nearbyHtml += '<div class="insp-nearby-item"' + clickAttr + '>' +
-        '<span class="insp-nearby-icon">' + getTypeIcon(n.sign.type) + '</span>' +
-        '<span class="insp-nearby-dot dot-' + n.sign.status + '"></span>' +
-        '<span class="insp-nearby-id">' + escHtml(n.sign.id) + '</span>' +
+      var sharedBadge = '<span class="rp-nearby-shared">' + n.sharedCount + ' shared</span>';
+      nearbyHtml += '<div class="rp-nearby-item"' + clickAttr + '>' +
+        '<span class="rp-nearby-icon">' + getTypeIcon(n.sign.type) + '</span>' +
+        '<span class="rp-nearby-dot dot-' + n.sign.status + '"></span>' +
+        '<span class="rp-nearby-id">' + escHtml(n.sign.id) + '</span>' +
         sharedBadge +
-        '<span class="insp-nearby-dist">' + n.distFt + ' ft</span>' +
+        '<span class="rp-nearby-dist">' + n.distFt + ' ft</span>' +
         '</div>';
     });
-    nearbyHtml += '<div class="insp-nearby-note">"Shared" = destinations in common with ' + escHtml(s.id) + '</div>';
+    nearbyHtml += '<div class="rp-nearby-note">"Shared" = destinations in common with ' + escHtml(s.id) + '</div>';
   }
-  var nearbyEl = document.getElementById('insp-nearby-body');
+  var nearbyEl = document.getElementById('rp-nearby-body');
   if (nearbyEl) nearbyEl.innerHTML = nearbyHtml;
 
-  // Update inspect button state
-  var btn = document.querySelector('.btn-inspect');
-  if (btn) btn.classList.add('active');
-
   // Restore collapsed states
-  restoreInspCollapsed();
+  restoreRPCollapsed();
 }
 
-function toggleInspector() {
-  var panel = document.getElementById('inspector');
-  if (!panel) return;
-  var isHidden = panel.classList.contains('hidden');
-  panel.classList.toggle('hidden');
-  localStorage.setItem('cub_inspector_open', isHidden ? '1' : '');
-  var btn = document.querySelector('.btn-inspect');
-  if (btn) btn.classList.toggle('active', isHidden);
-  if (isHidden) renderInspector();
-}
-
-function toggleInspSection(id) {
+function toggleRPSection(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('collapsed');
-  var key = 'insp_collapsed';
+  var key = 'rp_collapsed';
   var stored = {};
   try { stored = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) {}
   stored[id] = el.classList.contains('collapsed');
   localStorage.setItem(key, JSON.stringify(stored));
 }
 
-function restoreInspCollapsed() {
+function restoreRPCollapsed() {
   try {
-    var stored = JSON.parse(localStorage.getItem('insp_collapsed') || '{}');
+    var stored = JSON.parse(localStorage.getItem('rp_collapsed') || '{}');
     Object.keys(stored).forEach(function(id) {
       var el = document.getElementById(id);
       if (el && stored[id]) el.classList.add('collapsed');
@@ -1479,35 +1452,176 @@ function restoreInspCollapsed() {
   } catch(e) {}
 }
 
-// Keyboard shortcut: i toggles inspector, Escape closes inspector or exits map
+// ── BUILDING NAMES REVIEW ──
+let bnViewActive = false;
+let bnSortField = 'count';
+let bnSortAsc = false;
+let bnData = []; // computed list of { name, count, zones, signs, status }
+
+function openBuildingNames() {
+  bnViewActive = true;
+  var mainPanel = document.getElementById('main-panel');
+  var bnPanel = document.getElementById('building-names');
+  var rp = document.getElementById('right-panel');
+
+  // Close other views
+  if (mapViewActive) {
+    mapViewActive = false;
+    document.getElementById('map-overview').classList.remove('visible');
+    var mapBtn = document.getElementById('map-toggle-btn');
+    mapBtn.style.borderColor = ''; mapBtn.style.color = '';
+  }
+  if (freqViewActive) {
+    freqViewActive = false;
+    document.getElementById('freq-report').classList.remove('visible');
+    var freqBtn = document.getElementById('freq-toggle-btn');
+    freqBtn.style.borderColor = ''; freqBtn.style.color = '';
+  }
+
+  mainPanel.style.display = 'none';
+  if (rp) rp.style.display = 'none';
+  bnPanel.classList.add('visible');
+  populateBNZones();
+  computeBuildingNames();
+  renderBuildingNames();
+}
+
+function closeBuildingNames() {
+  bnViewActive = false;
+  document.getElementById('building-names').classList.remove('visible');
+  document.getElementById('main-panel').style.display = '';
+  var rp = document.getElementById('right-panel');
+  if (rp) rp.style.display = '';
+}
+
+function populateBNZones() {
+  var zoneSet = new Set();
+  state.signs.forEach(function(s) { if (s.nbhd) zoneSet.add(s.nbhd); });
+  var sel = document.getElementById('bn-zone-filter');
+  var current = sel.value;
+  sel.innerHTML = '<option value="">All zones</option>';
+  Array.from(zoneSet).sort().forEach(function(z) {
+    sel.innerHTML += '<option value="' + escHtml(z) + '"' + (z === current ? ' selected' : '') + '>' + escHtml(z) + '</option>';
+  });
+}
+
+function computeBuildingNames() {
+  var nameMap = {};
+  // Get BN statuses from localStorage
+  var bnStatuses = {};
+  try { bnStatuses = JSON.parse(localStorage.getItem('cub_bn_statuses') || '{}'); } catch(e) {}
+
+  state.signs.forEach(function(s) {
+    s.dests.forEach(function(d) {
+      if (!d.name) return;
+      var name = d.name.trim();
+      if (!nameMap[name]) nameMap[name] = { name: name, count: 0, zones: new Set(), types: new Set(), signs: [] };
+      nameMap[name].count++;
+      if (s.nbhd) nameMap[name].zones.add(s.nbhd);
+      if (s.type) nameMap[name].types.add(s.type);
+      nameMap[name].signs.push(s);
+    });
+  });
+
+  bnData = Object.values(nameMap).map(function(b) {
+    return {
+      name: b.name,
+      count: b.count,
+      zones: Array.from(b.zones).sort(),
+      types: Array.from(b.types),
+      signs: b.signs,
+      status: bnStatuses[b.name] || 'pending'
+    };
+  });
+}
+
+function renderBuildingNames() {
+  var search = (document.getElementById('bn-search').value || '').trim().toLowerCase();
+  var zone = document.getElementById('bn-zone-filter').value;
+
+  var filtered = bnData.filter(function(b) {
+    if (search && b.name.toLowerCase().indexOf(search) < 0) return false;
+    if (zone && b.zones.indexOf(zone) < 0) return false;
+    return true;
+  });
+
+  // Sort
+  filtered.sort(function(a, b) {
+    var result = 0;
+    if (bnSortField === 'name') result = a.name.localeCompare(b.name);
+    else if (bnSortField === 'count') result = a.count - b.count;
+    return bnSortAsc ? result : -result;
+  });
+
+  // Summary
+  var approved = bnData.filter(function(b) { return b.status === 'approved'; }).length;
+  var flagged = bnData.filter(function(b) { return b.status === 'flagged'; }).length;
+  var pending = bnData.filter(function(b) { return b.status === 'pending'; }).length;
+  document.getElementById('bn-summary').innerHTML =
+    '<span class="bn-stat">' + bnData.length + ' buildings</span>' +
+    '<span class="bn-stat" style="color:var(--approve)">' + approved + ' approved</span>' +
+    '<span class="bn-stat" style="color:var(--flag)">' + flagged + ' flagged</span>' +
+    '<span class="bn-stat">' + pending + ' pending</span>';
+
+  // Sort icons
+  ['name', 'count'].forEach(function(f) {
+    var icon = document.getElementById('bn-sort-' + f);
+    if (icon) icon.textContent = bnSortField === f ? (bnSortAsc ? '↑' : '↓') : '↕';
+  });
+
+  // Table rows
+  var tbody = document.getElementById('bn-tbody');
+  tbody.innerHTML = filtered.map(function(b) {
+    var zonePills = b.zones.map(function(z) { return '<span class="bn-zone-pill">' + escHtml(z) + '</span>'; }).join('');
+    var statusCls = 'bn-status-' + b.status;
+    var statusLabel = b.status.charAt(0).toUpperCase() + b.status.slice(1);
+    var actions = '';
+    if (b.status !== 'approved') actions += '<button class="bn-approve-btn" onclick="setBNStatus(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\',\'approved\')">✓</button>';
+    if (b.status !== 'flagged') actions += '<button class="bn-flag-btn" onclick="setBNStatus(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\',\'flagged\')">⚑</button>';
+    if (b.status !== 'pending') actions += '<button class="bn-approve-btn" onclick="setBNStatus(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\',\'pending\')" style="color:var(--cu-muted)">↺</button>';
+    return '<tr>' +
+      '<td class="bn-name">' + escHtml(b.name) + '</td>' +
+      '<td class="bn-count">' + b.count + '</td>' +
+      '<td>' + zonePills + '</td>' +
+      '<td><span class="bn-status-pill ' + statusCls + '">' + statusLabel + '</span></td>' +
+      '<td>' + actions + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function sortBNBy(field) {
+  if (bnSortField === field) bnSortAsc = !bnSortAsc;
+  else { bnSortField = field; bnSortAsc = field === 'name'; }
+  renderBuildingNames();
+}
+
+function filterBuildingNames() { renderBuildingNames(); }
+
+function setBNStatus(name, status) {
+  var bnStatuses = {};
+  try { bnStatuses = JSON.parse(localStorage.getItem('cub_bn_statuses') || '{}'); } catch(e) {}
+  if (status === 'pending') delete bnStatuses[name];
+  else bnStatuses[name] = status;
+  localStorage.setItem('cub_bn_statuses', JSON.stringify(bnStatuses));
+  // Update in-memory
+  bnData.forEach(function(b) { if (b.name === name) b.status = status; });
+  renderBuildingNames();
+}
+
+// Keyboard: Escape exits map/freq/bn views
 document.addEventListener('keydown', function(e) {
-  // Don't trigger if user is typing in an input
   var tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
-  if (e.key === 'i' || e.key === 'I') {
-    toggleInspector();
-    e.preventDefault();
-  }
   if (e.key === 'Escape') {
-    var panel = document.getElementById('inspector');
-    if (panel && !panel.classList.contains('hidden')) {
-      toggleInspector();
-    } else if (mapViewActive) {
-      toggleMapView();
-    } else if (freqViewActive) {
-      toggleFreqReport();
-    }
+    if (mapViewActive) toggleMapView();
+    else if (freqViewActive) toggleFreqReport();
+    else if (bnViewActive) closeBuildingNames();
   }
 });
 
 // ── INIT ──
 initTheme();
-// Restore inspector open state from previous session
-if (localStorage.getItem('cub_inspector_open') === '1') {
-  var inspPanel = document.getElementById('inspector');
-  if (inspPanel) inspPanel.classList.remove('hidden');
-}
 if (!loadSession()) {
   // no saved session — show load screen (default state)
 }
