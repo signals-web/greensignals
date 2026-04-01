@@ -54,8 +54,14 @@
     </div>
     <div class="sign-list" id="sign-list"></div>
     <div class="sidebar-footer">
-      <span class="reviewer-chip" onclick="promptUserName()" id="reviewer-chip">Set your name</span>
-      <span class="sheets-status admin-only" id="sheets-status" style="display:none"></span>
+      <div style="margin-bottom:8px">
+        <span class="reviewer-chip" onclick="promptUserName()" id="reviewer-chip">Set your name</span>
+        <span class="sheets-status admin-only" id="sheets-status" style="display:none"></span>
+      </div>
+      <button class="export-btn" id="map-toggle-btn" onclick="toggleMapView()" style="margin-bottom:6px">Map overview</button>
+      <button class="export-btn" id="freq-toggle-btn" onclick="toggleFreqReport()" style="margin-bottom:6px">Building frequency</button>
+      <button class="export-btn admin-only" onclick="exportCSV()" style="margin-bottom:6px">Export reviewed signs (CSV) ↓</button>
+      <button class="export-btn admin-only" onclick="if(confirm('Load a new CSV? Current session will be cleared.'))clearSession()" style="color:var(--cu-muted);font-size:11px">Load new CSV</button>
     </div>
   </aside>
 
@@ -69,67 +75,73 @@
       </div>
       <div id="sign-view"></div>
     </div>
-  </main>
 
-  <aside class="right-panel" id="right-panel">
-    <div class="rp-section" id="rp-properties">
-      <div class="rp-section-header" onclick="toggleRPSection('rp-properties')">
-        <span class="rp-section-title">Properties</span>
-        <span class="rp-chevron">▼</span>
+    <!-- Floating Inspector Panel -->
+    <div class="inspector hidden" id="inspector">
+      <div class="inspector-header">
+        <span class="inspector-title">Sign Details</span>
+        <button class="inspector-close" onclick="toggleInspector()">✕</button>
       </div>
-      <div class="rp-section-body" id="rp-properties-body"></div>
-    </div>
+      <div class="inspector-body" id="inspector-body">
+        <div class="insp-section" id="insp-properties">
+          <div class="insp-section-header" onclick="toggleInspSection('insp-properties')">
+            <span class="insp-section-title">Properties</span>
+            <span class="insp-chevron">▼</span>
+          </div>
+          <div class="insp-section-body" id="insp-properties-body"></div>
+        </div>
 
-    <div class="rp-section" id="rp-nearby">
-      <div class="rp-section-header" onclick="toggleRPSection('rp-nearby')">
-        <span class="rp-section-title">Nearby Signs</span>
-        <span class="rp-chevron">▼</span>
-      </div>
-      <div class="rp-section-body" id="rp-nearby-body"></div>
-    </div>
+        <div class="insp-section" id="insp-nearby">
+          <div class="insp-section-header" onclick="toggleInspSection('insp-nearby')">
+            <span class="insp-section-title">Nearby Signs</span>
+            <span class="insp-chevron">▼</span>
+          </div>
+          <div class="insp-section-body" id="insp-nearby-body"></div>
+        </div>
 
-    <div class="rp-section" id="rp-discussion">
-      <div class="rp-section-header" onclick="toggleRPSection('rp-discussion')">
-        <span class="rp-section-title">Discussion</span>
-        <span class="rp-comment-count" id="comment-count"></span>
-        <span class="rp-chevron">▼</span>
-      </div>
-      <div class="rp-section-body">
-        <div class="comment-thread" id="comment-thread"></div>
-        <div class="comment-input-row" id="comment-input-row">
-          <input class="comment-input" id="comment-input" placeholder="Add a comment..." maxlength="500" onkeydown="if(event.key==='Enter')postComment()">
-          <button class="comment-send-btn" onclick="postComment()">Post</button>
+        <div class="insp-section" id="insp-discussion">
+          <div class="insp-section-header" onclick="toggleInspSection('insp-discussion')">
+            <span class="insp-section-title">Discussion</span>
+            <span class="insp-comment-count" id="comment-count"></span>
+            <span class="insp-chevron">▼</span>
+          </div>
+          <div class="insp-section-body">
+            <div class="comment-thread" id="comment-thread"></div>
+            <div class="comment-input-row">
+              <input class="comment-input" id="comment-input" placeholder="Add a comment..." maxlength="500" onkeydown="if(event.key==='Enter')postComment()">
+              <button class="comment-send-btn" onclick="postComment()">Post</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="insp-section" id="insp-activity">
+          <div class="insp-section-header" onclick="toggleInspSection('insp-activity')">
+            <span class="insp-section-title">Activity</span>
+            <span class="insp-chevron">▼</span>
+          </div>
+          <div class="insp-section-body">
+            <div class="activity-list" id="activity-list"></div>
+          </div>
+        </div>
+
+        <div class="insp-section collapsed" id="insp-tools">
+          <div class="insp-section-header" onclick="toggleInspSection('insp-tools')">
+            <span class="insp-section-title">Tools</span>
+            <span class="insp-chevron">▼</span>
+          </div>
+          <div class="insp-section-body">
+            <button class="insp-tool-btn" onclick="toggleMapView()">Map overview</button>
+            <button class="insp-tool-btn" onclick="toggleFreqReport()">Building frequency</button>
+            <button class="insp-tool-btn admin-only" onclick="exportCSV()">Export reviewed signs (CSV) ↓</button>
+            <button class="insp-tool-btn admin-only" onclick="if(confirm('Load a new CSV? Current session will be cleared.'))clearSession()" style="color:var(--cu-muted)">Load new CSV</button>
+          </div>
         </div>
       </div>
     </div>
-
-    <div class="rp-section" id="rp-activity">
-      <div class="rp-section-header" onclick="toggleRPSection('rp-activity')">
-        <span class="rp-section-title">Activity</span>
-        <span class="rp-chevron">▼</span>
-      </div>
-      <div class="rp-section-body">
-        <div class="activity-list" id="activity-list"></div>
-      </div>
-    </div>
-
-    <div class="rp-section" id="rp-tools">
-      <div class="rp-section-header" onclick="toggleRPSection('rp-tools')">
-        <span class="rp-section-title">Tools</span>
-        <span class="rp-chevron">▼</span>
-      </div>
-      <div class="rp-section-body">
-        <button class="rp-tool-btn" id="map-toggle-btn" onclick="toggleMapView()">Map overview</button>
-        <button class="rp-tool-btn" id="freq-toggle-btn" onclick="toggleFreqReport()">Building frequency</button>
-        <button class="rp-tool-btn admin-only" onclick="exportCSV()">Export reviewed signs (CSV) ↓</button>
-        <button class="rp-tool-btn admin-only" onclick="if(confirm('Load a new CSV? Current session will be cleared.'))clearSession()" style="color:var(--cu-muted)">Load new CSV</button>
-      </div>
-    </div>
-
-    <button class="rp-collapse-btn" id="rp-collapse-btn" onclick="toggleRightPanel()" title="Toggle panel">◀</button>
-  </aside>
+  </main>
 
   <div id="map-overview" class="main-panel">
+    <button class="map-back-btn" onclick="toggleMapView()">← Back to sign review</button>
     <div class="map-stats" id="map-stats"></div>
     <div id="overview-map"></div>
     <div class="map-legend">
