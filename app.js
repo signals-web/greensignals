@@ -1435,6 +1435,10 @@ function toggleNearbySheet() {
 function renderNearbySheet() {
   var s = state.filtered[state.current];
   if (!s) return;
+  // Current sign's destination names for overlap detection
+  var currentDests = {};
+  s.dests.forEach(function(d) { if (d.name) currentDests[d.name.trim().toLowerCase()] = true; });
+
   var nearby = getNearbySignData(s);
   var html = '';
   if (nearby.length === 0) {
@@ -1444,15 +1448,24 @@ function renderNearbySheet() {
       var idx = state.filtered.indexOf(n.sign);
       var clickAttr = idx >= 0 ? ' onclick="goTo(' + idx + ')"' : '';
       var sharedBadge = '<span class="ns-shared">' + n.sharedCount + ' shared</span>';
-      html += '<div class="ns-item"' + clickAttr + '>' +
+      // Build destination list with overlaps highlighted
+      var destsHtml = n.sign.dests.map(function(d) {
+        if (!d.name) return '';
+        var isOverlap = currentDests[d.name.trim().toLowerCase()];
+        return '<div class="ns-dest' + (isOverlap ? ' ns-overlap' : '') + '">' + escHtml(d.name) + '</div>';
+      }).join('');
+      html += '<div class="ns-item">' +
+        '<div class="ns-item-row"' + clickAttr + '>' +
         '<span class="ns-icon">' + getTypeIcon(n.sign.type) + '</span>' +
         '<span class="status-dot dot-' + n.sign.status + '"></span>' +
         '<span class="ns-id">' + escHtml(n.sign.id) + '</span>' +
         sharedBadge +
         '<span class="ns-dist">' + n.distFt + ' ft</span>' +
+        '</div>' +
+        '<div class="ns-dests">' + destsHtml + '</div>' +
         '</div>';
     });
-    html += '<div class="ns-note">"Shared" = destinations in common with ' + escHtml(s.id) + '</div>';
+    html += '<div class="ns-note">Red = shared with ' + escHtml(s.id) + '</div>';
   }
   var body = document.getElementById('nearby-sheet-body');
   if (body) body.innerHTML = html;
