@@ -264,16 +264,6 @@ html.light .nearby-dest.nearby-shared { color: #d32f2f; }
 .facing-locked .facing-btn { opacity: .4; pointer-events: none; }
 .facing-locked .facing-btn.active { opacity: .7; }
 .facing-locked .facing-label { color: var(--cu-muted); }
-.direction-comment-input { display: flex; gap: 6px; margin-top: 8px; }
-.direction-comment-input .edit-input { flex: 1; font-size: 12px; padding: 6px 8px; }
-.dir-comment-thread { max-height: 120px; overflow-y: auto; margin-top: 6px; }
-.dir-comment-item { font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.06); line-height: 1.4; }
-.dir-comment-item strong { font-size: 11px; margin-right: 4px; }
-.dir-comment-item .comment-time { font-family: var(--font-mono); font-size: 9px; color: var(--cu-muted); margin-right: 6px; }
-.dir-comment-item .dir-comment-text { display: block; margin-top: 2px; color: var(--cu-white); }
-.dir-comment-item.dir-system { color: var(--cu-muted); font-style: italic; }
-.dir-comment-item.dir-system .dir-comment-text { color: var(--cu-muted); }
-html.light .dir-comment-item { border-bottom-color: rgba(0,0,0,.06); }
 
 .actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
 .action-btn { padding: 10px 20px; border-radius: 5px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .15s; }
