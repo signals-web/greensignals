@@ -147,17 +147,18 @@ function facingCompassSvg(facing) {
 }
 
 // ── BUILDING NAME RESOLUTION ──
-function getOfficialName(originalName) {
+function getOfficialName(originalName, signType) {
   var cache = window._bnFirebaseCache || {};
   var key = (originalName || '').replace(/[.#$/[\]]/g, '_');
   var entry = cache[key];
-  if (entry && entry.officialName && entry.officialName !== originalName) {
-    return { display: entry.officialName, original: originalName, standardized: true, deprecated: entry.status === 'deprecated' };
-  }
-  if (entry && entry.status === 'deprecated') {
-    return { display: originalName, original: originalName, standardized: false, deprecated: true };
-  }
-  return { display: originalName, original: originalName, standardized: false, deprecated: false };
+  var officialName = (entry && entry.officialName) ? entry.officialName : originalName;
+  var shortName = (entry && entry.shortName) ? entry.shortName : '';
+  var deprecated = entry && entry.status === 'deprecated';
+  // Nudge signs use short name if available
+  var useShort = signType === 'N' && shortName;
+  var display = useShort ? shortName : (officialName !== originalName ? officialName : originalName);
+  var standardized = display !== originalName;
+  return { display: display, original: originalName, shortName: shortName, standardized: standardized, deprecated: deprecated };
 }
 
 // ── DOUBLE-SIDED SIGN LOGIC ──
@@ -902,7 +903,7 @@ function buildDestTable(dests, sign, editing, facingOffset) {
     });
     // Render sorted rows — arrow on every row, same-direction rows adjacent
     viewRows.forEach(function(r) {
-      var resolved = getOfficialName(r.name);
+      var resolved = getOfficialName(r.name, sign.type);
       var nameClass = 'dest-name-cell' + (r.name ? '' : ' empty') + (resolved.standardized ? ' dest-standardized' : '') + (resolved.deprecated ? ' dest-deprecated' : '');
       var tooltip = resolved.standardized ? ' title="Original: ' + escHtml(r.name) + '"' : (resolved.deprecated ? ' title="Deprecated name"' : '');
       html += `<tr>`;
