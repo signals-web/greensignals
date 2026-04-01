@@ -543,10 +543,10 @@ html.light .freq-zone-pill { background: rgba(0,0,0,.05); }
 /* BUILDING NAMES REVIEW */
 #building-names { display: none; position: relative; overflow-y: auto; }
 #building-names.visible { display: block; grid-column: 2 / -1; }
-.bn-inner { padding: 2rem; max-width: 900px; margin: 0 auto; }
+.bn-inner { padding: 2rem; max-width: 1100px; margin: 0 auto; }
 .bn-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
 .bn-title { font-size: 20px; font-weight: 500; letter-spacing: -.02em; }
-.bn-filters { display: flex; gap: 8px; }
+.bn-filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .bn-search {
   background: var(--cu-dark); border: 1px solid var(--cu-border); color: var(--cu-white);
   font-family: var(--font-sans); font-size: 13px; padding: 6px 10px; border-radius: 4px; outline: none; width: 200px;
@@ -556,7 +556,7 @@ html.light .freq-zone-pill { background: rgba(0,0,0,.05); }
   background: var(--cu-dark); border: 1px solid var(--cu-border); color: var(--cu-white);
   font-family: var(--font-sans); font-size: 13px; padding: 6px 10px; border-radius: 4px; outline: none;
 }
-.bn-summary { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.bn-summary { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .bn-stat {
   font-family: var(--font-mono); font-size: 12px; color: var(--cu-muted);
   padding: 4px 10px; border: 1px solid var(--cu-border); border-radius: 3px;
@@ -570,34 +570,92 @@ html.light .freq-zone-pill { background: rgba(0,0,0,.05); }
 .bn-sortable { cursor: pointer; user-select: none; }
 .bn-sortable:hover { color: var(--cu-gold); }
 .bn-sort-icon { font-size: 10px; margin-left: 2px; }
-.bn-table tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); transition: background .1s; }
-.bn-table tbody tr:hover { background: rgba(207,184,124,.04); }
+.bn-table tbody tr.bn-row { border-bottom: 1px solid rgba(255,255,255,.04); transition: background .1s; }
+.bn-table tbody tr.bn-row:hover { background: rgba(207,184,124,.04); }
 .bn-table tbody td { padding: 8px 10px; vertical-align: middle; }
-.bn-name { font-weight: 500; }
-.bn-count { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--cu-gold); }
-.bn-zone-pill {
-  display: inline-block; font-family: var(--font-mono); font-size: 10px;
-  padding: 2px 6px; border-radius: 3px; margin: 1px 2px;
-  background: rgba(255,255,255,.06); color: var(--cu-muted);
+.bn-name { font-weight: 500; min-width: 160px; }
+.bn-short { min-width: 80px; color: var(--cu-muted); font-size: 12px; }
+.bn-original { color: var(--cu-border); font-size: 12px; }
+.bn-original.bn-changed { color: var(--cu-gold); font-style: italic; }
+.bn-count { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--cu-gold); white-space: nowrap; }
+.bn-actions { white-space: nowrap; }
+.bn-meta { font-family: var(--font-mono); font-size: 10px; color: var(--cu-border); margin-top: 2px; }
+
+/* Editable cells */
+.bn-editable {
+  cursor: text; border-radius: 3px; outline: none;
+  transition: background .15s, box-shadow .15s;
 }
+.bn-editable:focus {
+  background: rgba(207,184,124,.08);
+  box-shadow: inset 0 0 0 1px var(--cu-gold);
+}
+.bn-editable:empty::before {
+  content: attr(data-field);
+  color: var(--cu-border); font-style: italic; font-weight: 400;
+}
+td.bn-short.bn-editable:empty::before { content: '—'; }
+td.bn-name.bn-editable:empty::before { content: 'Set official name...'; }
+
+/* Status pills */
 .bn-status-pill {
   font-family: var(--font-mono); font-size: 10px; font-weight: 500;
-  padding: 2px 8px; border-radius: 3px;
+  padding: 2px 8px; border-radius: 3px; display: inline-block;
 }
 .bn-status-approved { background: var(--approve-bg); color: var(--approve); }
 .bn-status-pending { background: var(--cu-mid); color: var(--cu-muted); }
 .bn-status-flagged { background: var(--flag-bg); color: var(--flag); }
-.bn-approve-btn, .bn-flag-btn {
+.bn-status-deprecated { background: var(--cu-mid); color: var(--cu-border); text-decoration: line-through; }
+
+/* Action buttons */
+.bn-action-btn {
   background: transparent; border: 1px solid var(--cu-border); color: var(--cu-muted);
-  font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 3px;
-  cursor: pointer; transition: all .15s; margin-left: 4px;
+  font-family: var(--font-mono); font-size: 10px; padding: 3px 6px; border-radius: 3px;
+  cursor: pointer; transition: all .15s; margin-left: 2px;
 }
 .bn-approve-btn:hover { border-color: var(--approve); color: var(--approve); }
 .bn-flag-btn:hover { border-color: var(--flag); color: var(--flag); }
+.bn-deprecate-btn:hover { border-color: var(--cu-muted); color: var(--cu-muted); text-decoration: line-through; }
+.bn-reset-btn:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
+.bn-notes-btn:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
+.bn-notes-btn.has-notes { color: var(--cu-gold); }
+
+/* Notes row */
+.bn-notes-row td { padding: 0 10px 12px !important; }
+.bn-notes-wrap { padding: 8px 12px; background: rgba(255,255,255,.02); border-radius: 4px; }
+.bn-notes-label {
+  display: block; font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--cu-border); margin-bottom: 4px;
+}
+.bn-notes-input {
+  width: 100%; min-height: 40px; background: var(--cu-dark); border: 1px solid var(--cu-border);
+  border-radius: 3px; color: var(--cu-white); font-family: var(--font-sans); font-size: 12px;
+  padding: 6px 8px; outline: none; resize: vertical;
+}
+.bn-notes-input:focus { border-color: var(--cu-gold); }
+
+/* Sign card: standardized name indicator */
+.dest-standardized { border-left: 2px solid var(--cu-gold); padding-left: 10px !important; }
+.dest-deprecated { text-decoration: line-through; opacity: .6; }
+
+/* Combobox: deprecated + alias */
+.combobox-deprecated { opacity: .5; }
+.combobox-dep-warn {
+  font-family: var(--font-mono); font-size: 9px; color: var(--flag);
+  margin-left: 6px; text-transform: uppercase; letter-spacing: .04em;
+}
+.combobox-alias { border-left: 2px solid var(--cu-gold); }
+
+/* Light mode overrides */
 html.light .bn-search { background: #fff; color: var(--cu-black); border-color: #999; }
 html.light .bn-filters select { background: #fff; color: var(--cu-black); border-color: #999; }
-html.light .bn-table tbody tr:hover { background: rgba(0,0,0,.03); }
-html.light .bn-table tbody tr { border-bottom-color: rgba(0,0,0,.06); }
+html.light .bn-table tbody tr.bn-row:hover { background: rgba(0,0,0,.03); }
+html.light .bn-table tbody tr.bn-row { border-bottom-color: rgba(0,0,0,.06); }
+html.light .bn-editable:focus { background: rgba(207,184,124,.1); }
+html.light .bn-notes-wrap { background: rgba(0,0,0,.02); }
+html.light .bn-notes-input { background: #fff; color: var(--cu-black); border-color: #999; }
+html.light .bn-original { color: #999; }
+html.light .bn-original.bn-changed { color: var(--cu-gold); }
 
 /* theme toggle button */
 .theme-toggle {
