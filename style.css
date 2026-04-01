@@ -210,8 +210,8 @@ html.light .ns-item { border-bottom-color: rgba(0,0,0,.06); }
 
 html.light .right-panel { background: #F0EEE9; }
 html.light .rp-section-header:hover { background: rgba(0,0,0,.02); }
-html.light .map-back-btn { background: var(--cu-black); color: #fff; border-color: var(--cu-black); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-html.light .map-back-btn:hover { background: var(--cu-gold); color: #fff; border-color: var(--cu-gold); }
+html.light .map-back-btn { background: #2C2C2C; color: #fff; border-color: #2C2C2C; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+html.light .map-back-btn:hover { background: #1a1a1a; color: var(--cu-gold); border-color: #1a1a1a; }
 
 /* MAIN */
 .main-panel { overflow-y: auto; overflow-x: hidden; background: var(--cu-black); position: relative; }
