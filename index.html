@@ -45,6 +45,12 @@
         <option value="M">M — Main</option>
         <option value="PM">PM — Primary Main</option>
       </select>
+      <div class="status-filters">
+        <button class="status-filter-btn" data-status="approved" onclick="setStatusFilter('approved')">Approved</button>
+        <button class="status-filter-btn" data-status="flagged" onclick="setStatusFilter('flagged')">Flagged</button>
+        <button class="status-filter-btn" data-status="pending" onclick="setStatusFilter('pending')">Unreviewed</button>
+        <button class="status-filter-btn" id="btn-show-mine" onclick="toggleShowMine()">Mine</button>
+      </div>
     </div>
     <div class="sign-list" id="sign-list"></div>
     <div class="activity-feed" id="activity-feed">

@@ -200,7 +200,7 @@ function splitSides(dests, facing) {
 }
 
 // ── STATE ──
-const state = { signs:[], current:0, filtered:[], filter:'' };
+const state = { signs:[], current:0, filtered:[], filter:'', statusFilter:'', showMine:false };
 let map=null, mapMarker=null, destMarkers=[];
 
 // ── CSV ──
@@ -513,9 +513,35 @@ function statusColor(s){return s==='approved'?'#30D158':s==='edited'?'#FFD60A':s
 
 // ── FILTER & COUNTS ──
 function applyFilter() {
-  state.filter=document.getElementById('type-filter').value;
-  state.filtered=state.filter?state.signs.filter(s=>s.type===state.filter):state.signs.slice();
-  state.current=0; render();
+  state.filter = document.getElementById('type-filter').value;
+  var statusEl = document.getElementById('status-filter');
+  state.statusFilter = statusEl ? statusEl.value : state.statusFilter;
+  var result = state.signs.slice();
+  if (state.filter) result = result.filter(function(s) { return s.type === state.filter; });
+  if (state.statusFilter) result = result.filter(function(s) { return s.status === state.statusFilter; });
+  if (state.showMine) {
+    var me = getReviewer();
+    result = result.filter(function(s) { return s.reviewedBy === me; });
+  }
+  state.filtered = result;
+  state.current = 0;
+  render();
+}
+function toggleShowMine() {
+  var me = getReviewer();
+  if (!me) { requireReviewer(toggleShowMine); return; }
+  state.showMine = !state.showMine;
+  var btn = document.getElementById('btn-show-mine');
+  if (btn) btn.classList.toggle('filter-active', state.showMine);
+  applyFilter();
+}
+function setStatusFilter(val) {
+  state.statusFilter = state.statusFilter === val ? '' : val;
+  // Update button states
+  document.querySelectorAll('.status-filter-btn').forEach(function(b) {
+    b.classList.toggle('filter-active', b.dataset.status === state.statusFilter);
+  });
+  applyFilter();
 }
 function getCounts() {
   const s=state.signs;
@@ -956,7 +982,7 @@ function updateOverviewMarkers() {
     <div class="map-stat" style="color:var(--cu-gold);border-left:1px solid var(--cu-border);padding-left:1.5rem">${c.total} signs total</div>
   `;
 
-  state.signs.forEach((s, globalIdx) => {
+  state.filtered.forEach((s, filteredIdx) => {
     const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
     if (isNaN(lat) || isNaN(lng)) return;
 
@@ -974,7 +1000,7 @@ function updateOverviewMarkers() {
         <div class="popup-id">${s.id}</div>
         <div class="popup-nbhd">${s.nbhd} · ${TYPE_LABELS[s.type]||s.type}</div>
         <div class="popup-dests">${destList}${moreCount}</div>
-        <button class="popup-review-btn" onclick="openReviewFromMap(${globalIdx})">Review this sign →</button>
+        <button class="popup-review-btn" onclick="openReviewFromMap(${filteredIdx})">Review this sign →</button>
       </div>
     `;
 
@@ -989,18 +1015,10 @@ function updateOverviewMarkers() {
   });
 }
 
-function openReviewFromMap(globalIdx) {
+function openReviewFromMap(filteredIdx) {
   mapViewActive = true;
   toggleMapView();
-  const s = state.signs[globalIdx];
-  const filteredIdx = state.filtered.findIndex(x => x.id === s.id);
-  if (filteredIdx >= 0) goTo(filteredIdx);
-  else {
-    document.getElementById('type-filter').value = '';
-    applyFilter();
-    const idx2 = state.filtered.findIndex(x => x.id === s.id);
-    if (idx2 >= 0) goTo(idx2);
-  }
+  if (filteredIdx >= 0 && filteredIdx < state.filtered.length) goTo(filteredIdx);
 }
 
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
