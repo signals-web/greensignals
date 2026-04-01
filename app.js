@@ -9,7 +9,7 @@ function toggleTheme() {
   var newStyle = getMapStyle();
   // Switch sign card map tile style in-place
   if (map) {
-    map.once('style.load', function() { hideMapPOIs(map); updateMap(); });
+    map.once('style.load', function() { hideMapPOIs(map, true); updateMap(); });
     map.setStyle(newStyle);
   }
   // Switch overview map tile style in-place
@@ -202,6 +202,7 @@ function splitSides(dests, facing) {
 // ── STATE ──
 const state = { signs:[], current:0, filtered:[], filter:'', statusFilter:'', showMine:false };
 let map=null, mapMarker=null, destMarkers=[];
+var destMarkersByName = {}; // { 'building name': { dot, label, lineId } }
 
 // ── BUILDINGS SERVICE (swap to Supabase later by editing this section) ──
 var _buildingsCache = null;
@@ -471,18 +472,25 @@ function initMap() {
     interactive: false,
     attributionControl: false
   });
-  map.on('load', function() { hideMapPOIs(map); updateMap(); });
+  map.on('load', function() { hideMapPOIs(map, true); updateMap(); });
 }
-function hideMapPOIs(m) {
+function hideMapPOIs(m, hideStreetNames) {
   var layers = m.getStyle().layers || [];
-  // Keep only road labels and place/city names — hide everything else with icons
-  var keepPattern = /road|street|highway|place|city|town|village|country|state|continent|housenumber|building/i;
-  layers.forEach(function(l) {
-    if (!l.id) return;
-    if (l.type === 'symbol' && !keepPattern.test(l.id)) {
-      m.setLayoutProperty(l.id, 'visibility', 'none');
-    }
-  });
+  if (hideStreetNames) {
+    // Sign card map: hide ALL symbol layers (street names, POIs, everything)
+    layers.forEach(function(l) {
+      if (l.type === 'symbol') m.setLayoutProperty(l.id, 'visibility', 'none');
+    });
+  } else {
+    // Overview map: keep road/place labels, hide POI icons
+    var keepPattern = /road|street|highway|place|city|town|village|country|state|continent|housenumber|building/i;
+    layers.forEach(function(l) {
+      if (!l.id) return;
+      if (l.type === 'symbol' && !keepPattern.test(l.id)) {
+        m.setLayoutProperty(l.id, 'visibility', 'none');
+      }
+    });
+  }
 }
 function updateMap() {
   if (!map) return;
@@ -501,6 +509,7 @@ function updateMap() {
     } catch(e) { /* layer/source already removed by style change */ }
   });
   destMarkers = [];
+  destMarkersByName = {};
 
   // Sign marker — horizontal bar representing sign panel
   // Map bearing already rotates to face the right direction,
@@ -552,7 +561,8 @@ function updateMap() {
 
     // Destination dot
     var dotEl = document.createElement('div');
-    dotEl.style.cssText = 'width:6px;height:6px;border-radius:50%;background:'+dotFill+';border:1px solid '+dotStroke+';';
+    dotEl.className = 'map-dest-dot';
+    dotEl.style.cssText = 'width:6px;height:6px;border-radius:50%;background:'+dotFill+';border:1px solid '+dotStroke+';transition:all .15s;';
     var dot = new maplibregl.Marker({ element: dotEl, anchor: 'center' })
       .setLngLat([dlng, dlat]).addTo(map);
     destMarkers.push(dot);
@@ -564,6 +574,10 @@ function updateMap() {
     var label = new maplibregl.Marker({ element: labelEl, anchor: 'bottom-left', offset: [4, -4] })
       .setLngLat([dlng, dlat]).addTo(map);
     destMarkers.push(label);
+
+    // Store by name for hover highlighting
+    var nameKey = d.name.trim().toLowerCase();
+    destMarkersByName[nameKey] = { dot: dotEl, label: labelEl, lineId: lineId };
 
     bounds.extend([dlng, dlat]);
   });
@@ -663,6 +677,63 @@ function updateMap() {
     map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: rot });
   }, 200);
 }
+// ── DESTINATION HOVER HIGHLIGHT ──
+function highlightDest(td) {
+  var name = (td.getAttribute('data-dest-name') || '').trim().toLowerCase();
+  if (!name || !map) return;
+  var entry = destMarkersByName[name];
+  if (!entry) return;
+  // Enlarge dot
+  if (entry.dot) {
+    entry.dot.style.width = '10px';
+    entry.dot.style.height = '10px';
+    entry.dot.style.background = 'var(--cu-gold)';
+    entry.dot.style.boxShadow = '0 0 6px rgba(207,184,124,.6)';
+  }
+  // Bold label
+  if (entry.label) {
+    entry.label.style.color = 'var(--cu-gold)';
+    entry.label.style.fontWeight = '500';
+    entry.label.style.fontSize = '11px';
+  }
+  // Brighten line
+  if (entry.lineId && map.getLayer(entry.lineId)) {
+    map.setPaintProperty(entry.lineId, 'line-color', 'rgba(207,184,124,0.9)');
+    map.setPaintProperty(entry.lineId, 'line-width', 2.5);
+  }
+  // Highlight the row
+  td.parentElement.classList.add('dest-hover');
+}
+
+function unhighlightDest(td) {
+  var name = (td.getAttribute('data-dest-name') || '').trim().toLowerCase();
+  if (!name || !map) return;
+  var entry = destMarkersByName[name];
+  if (!entry) return;
+  var isLight = document.documentElement.classList.contains('light');
+  var dotFill = isLight ? '#7A5A14' : '#CFB87C';
+  // Reset dot
+  if (entry.dot) {
+    entry.dot.style.width = '6px';
+    entry.dot.style.height = '6px';
+    entry.dot.style.background = dotFill;
+    entry.dot.style.boxShadow = '';
+  }
+  // Reset label
+  if (entry.label) {
+    entry.label.style.color = '';
+    entry.label.style.fontWeight = '';
+    entry.label.style.fontSize = '';
+  }
+  // Reset line
+  if (entry.lineId && map.getLayer(entry.lineId)) {
+    var lineColor = isLight ? 'rgba(80,60,10,0.6)' : 'rgba(207,184,124,0.5)';
+    map.setPaintProperty(entry.lineId, 'line-color', lineColor);
+    map.setPaintProperty(entry.lineId, 'line-width', 1.5);
+  }
+  td.parentElement.classList.remove('dest-hover');
+}
+
 function mapZoom(delta) {
   if (!map) return;
   var s = state.filtered[state.current];
@@ -788,7 +859,7 @@ function buildDestTable(dests, sign, editing, facingOffset) {
     viewRows.forEach(function(r) {
       html += `<tr>`;
       html += `<td>${arrowDisplay(r.displayDeg)}</td>`;
-      html += `<td class="dest-name-cell${r.name?'':' empty'}">${escHtml(r.name)||'—'}</td>`;
+      html += `<td class="dest-name-cell${r.name?'':' empty'}" data-dest-name="${escHtml(r.name)}" onmouseenter="highlightDest(this)" onmouseleave="unhighlightDest(this)">${escHtml(r.name)||'—'}</td>`;
       html += `<td>${r.ttd?`<span class="ttd-chip">${escHtml(r.ttd)}</span>`:''}</td>`;
       html += `</tr>`;
     });
