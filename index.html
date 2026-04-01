@@ -72,19 +72,19 @@
       <div id="sign-view"></div>
     </div>
 
+    <!-- Nearby Signs pullout sheet -->
+    <div class="nearby-sheet hidden" id="nearby-sheet">
+      <div class="nearby-sheet-header">
+        <span class="nearby-sheet-title">Nearby Signs</span>
+        <button class="nearby-sheet-close" onclick="toggleNearbySheet()">✕</button>
+      </div>
+      <div class="nearby-sheet-body" id="nearby-sheet-body"></div>
+    </div>
   </main>
 
   <!-- Right Panel — always visible -->
   <aside class="right-panel" id="right-panel">
     <div class="rp-scroll">
-
-      <div class="rp-section" id="rp-nearby">
-        <div class="rp-section-header" onclick="toggleRPSection('rp-nearby')">
-          <span class="rp-section-title">Nearby Signs</span>
-          <span class="rp-chevron">▼</span>
-        </div>
-        <div class="rp-section-body" id="rp-nearby-body"></div>
-      </div>
 
       <div class="rp-section" id="rp-discussion">
         <div class="rp-section-header" onclick="toggleRPSection('rp-discussion')">
