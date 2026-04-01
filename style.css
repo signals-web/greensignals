@@ -34,6 +34,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 /* APP */
 #app { display: none; height: 100vh; }
 #app.visible { display: grid; grid-template-columns: 240px 1fr 280px; }
+#app.visible.nearby-open { grid-template-columns: 240px 1fr 260px 280px; }
 
 /* SIDEBAR */
 .sidebar { background: var(--cu-dark); border-right: 1px solid var(--cu-border); display: flex; flex-direction: column; overflow: hidden; }
@@ -141,15 +142,12 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .nearby-marker:hover { opacity: .9; }
 .nearby-marker svg { width: 10px; height: 10px; display: block; flex-shrink: 0; }
 
-/* Nearby Signs pullout sheet — slides from right edge of sign card area */
+/* Nearby Signs panel — persistent column between main and right panel */
 .nearby-sheet {
-  position: absolute; top: 0; right: 0; bottom: 0; width: 280px; max-width: 45%; z-index: 15;
   background: var(--cu-dark); border-left: 1px solid var(--cu-border);
-  box-shadow: -4px 0 16px rgba(0,0,0,.25);
-  display: flex; flex-direction: column;
-  transform: translateX(0); transition: transform .2s ease;
+  display: flex; flex-direction: column; overflow-y: auto;
 }
-.nearby-sheet.hidden { transform: translateX(calc(100% + 10px)); pointer-events: none; }
+.nearby-sheet.hidden { display: none; }
 .nearby-sheet-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 1rem; border-bottom: 1px solid var(--cu-border); flex-shrink: 0;
@@ -204,7 +202,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 html.light .nearby-toggle-btn { background: var(--cu-white); color: var(--cu-black); border-color: var(--cu-black); box-shadow: 0 2px 6px rgba(0,0,0,.15); }
 html.light .nearby-toggle-btn:hover, html.light .nearby-toggle-btn.active { background: var(--cu-gold); border-color: var(--cu-gold); }
 
-html.light .nearby-sheet { background: #F0EEE9; box-shadow: -4px 0 16px rgba(0,0,0,.08); }
+html.light .nearby-sheet { background: #F0EEE9; }
 html.light .ns-item:hover { background: rgba(0,0,0,.03); }
 html.light .ns-item { border-bottom-color: rgba(0,0,0,.06); }
 
@@ -765,14 +763,14 @@ html.light .bn-original.bn-changed { color: var(--cu-gold); }
 /* RESPONSIVE — shrink columns on smaller screens */
 @media (max-width: 1400px) {
   #app.visible { grid-template-columns: 200px 1fr 240px; }
-  .nearby-sheet { width: 240px; }
+  #app.visible.nearby-open { grid-template-columns: 200px 1fr 220px 240px; }
   .panel-inner { padding: 1.5rem 1.5rem 4rem; }
 }
 @media (max-width: 1200px) {
   #app.visible { grid-template-columns: 180px 1fr 220px; }
+  #app.visible.nearby-open { grid-template-columns: 180px 1fr 200px 220px; }
   .sidebar-header { padding: 1rem .75rem .75rem; }
   .sign-list-item { padding: 8px .75rem; font-size: 12px; }
-  .nearby-sheet { width: 220px; }
   .panel-inner { padding: 1.25rem 1rem 4rem; }
   .sign-card-id { font-size: 30px; }
   .sign-card-header-left { padding: 1rem; }
@@ -781,7 +779,7 @@ html.light .bn-original.bn-changed { color: var(--cu-gold); }
 }
 @media (max-width: 1024px) {
   #app.visible { grid-template-columns: 160px 1fr 200px; }
-  .nearby-sheet { width: 200px; }
+  #app.visible.nearby-open { grid-template-columns: 160px 1fr 180px 200px; }
   .panel-inner { padding: 1rem .75rem 3rem; max-width: none; }
   .sign-card-header { grid-template-columns: 1fr 1fr; }
   .sign-card-id { font-size: 26px; }
