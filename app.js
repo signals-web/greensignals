@@ -200,8 +200,129 @@ function splitSides(dests, facing) {
 }
 
 // ── STATE ──
-const state = { signs:[], current:0, filtered:[], filter:'' };
+const state = { signs:[], current:0, filtered:[], filter:'', statusFilter:'', showMine:false };
 let map=null, mapMarker=null, destMarkers=[];
+
+// ── BUILDINGS SERVICE (swap to Supabase later by editing this section) ──
+var _buildingsCache = null;
+var _buildingsFuse = null;
+
+function getBuildingsList() {
+  if (_buildingsCache) return Promise.resolve(_buildingsCache);
+  var apiKey = (window.__ENV__ && window.__ENV__.SHEETS_API_KEY) || '';
+  var sheetId = window.PROJECT ? window.PROJECT.sheetId : '';
+  if (!apiKey || !sheetId) return Promise.resolve([]);
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/DESTINATIONS!A1:J500?key=' + apiKey;
+  return fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+    var rows = data.values || [];
+    if (rows.length < 2) return [];
+    _buildingsCache = rows.slice(1).map(function(r) {
+      return { id: r[0]||'', name: r[1]||'', category: r[2]||'', lat: r[3]||'', lng: r[4]||'', zone: r[5]||'', tier: r[6]||'' };
+    });
+    if (typeof Fuse !== 'undefined') {
+      _buildingsFuse = new Fuse(_buildingsCache, { keys: ['name', 'id', 'category'], threshold: 0.35, distance: 100 });
+    }
+    return _buildingsCache;
+  }).catch(function() { return []; });
+}
+
+function searchBuildings(query) {
+  if (!query || !_buildingsFuse) return (_buildingsCache || []).slice(0, 10);
+  return _buildingsFuse.search(query).slice(0, 10).map(function(r) { return r.item; });
+}
+
+function getBuildingRecents() {
+  try { return JSON.parse(localStorage.getItem('cub_dest_recents') || '[]'); } catch(e) { return []; }
+}
+function addBuildingRecent(name) {
+  var recents = getBuildingRecents().filter(function(r) { return r !== name; });
+  recents.unshift(name);
+  if (recents.length > 10) recents = recents.slice(0, 10);
+  localStorage.setItem('cub_dest_recents', JSON.stringify(recents));
+}
+function getBuildingFavorites() {
+  try { return JSON.parse(localStorage.getItem('cub_dest_favorites') || '[]'); } catch(e) { return []; }
+}
+function toggleBuildingFavorite(name) {
+  var favs = getBuildingFavorites();
+  var idx = favs.indexOf(name);
+  if (idx >= 0) favs.splice(idx, 1); else favs.push(name);
+  localStorage.setItem('cub_dest_favorites', JSON.stringify(favs));
+}
+
+// ── COMBOBOX ──
+var _activeCombobox = null;
+
+function openCombobox(inputEl, rowIdx) {
+  closeCombobox();
+  var wrap = inputEl.parentElement;
+  var dropdown = document.createElement('div');
+  dropdown.className = 'combobox-dropdown';
+  dropdown.id = 'combobox-dropdown';
+  wrap.style.position = 'relative';
+  wrap.appendChild(dropdown);
+  _activeCombobox = { input: inputEl, dropdown: dropdown, rowIdx: rowIdx };
+  updateComboboxResults(inputEl.value);
+}
+
+function closeCombobox() {
+  var dd = document.getElementById('combobox-dropdown');
+  if (dd) dd.remove();
+  _activeCombobox = null;
+}
+
+function updateComboboxResults(query) {
+  if (!_activeCombobox) return;
+  var dd = _activeCombobox.dropdown;
+  var rowIdx = _activeCombobox.rowIdx;
+  var favs = getBuildingFavorites();
+  var html = '';
+
+  if (!query) {
+    // Show favorites then recents
+    var favorites = favs.length ? favs : [];
+    var recents = getBuildingRecents();
+    if (favorites.length) {
+      html += '<div class="combobox-section">Favorites</div>';
+      favorites.forEach(function(name) {
+        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(name).replace(/'/g, "\\'") + '\')">' +
+          '<span class="combobox-fav active" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'\')">★</span>' +
+          escHtml(name) + '</div>';
+      });
+    }
+    if (recents.length) {
+      html += '<div class="combobox-section">Recent</div>';
+      recents.forEach(function(name) {
+        var isFav = favs.indexOf(name) >= 0;
+        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(name).replace(/'/g, "\\'") + '\')">' +
+          '<span class="combobox-fav' + (isFav ? ' active' : '') + '" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'\')">' + (isFav ? '★' : '☆') + '</span>' +
+          escHtml(name) + '</div>';
+      });
+    }
+    if (!html) html = '<div class="combobox-empty">Start typing to search buildings...</div>';
+  } else {
+    var results = searchBuildings(query);
+    if (results.length) {
+      results.forEach(function(b) {
+        var isFav = favs.indexOf(b.name) >= 0;
+        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(b.name).replace(/'/g, "\\'") + '\')">' +
+          '<span class="combobox-fav' + (isFav ? ' active' : '') + '" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'' + escHtml(query).replace(/'/g, "\\'") + '\')">' + (isFav ? '★' : '☆') + '</span>' +
+          escHtml(b.name) + '<span class="combobox-zone">' + escHtml(b.zone) + '</span></div>';
+      });
+    } else {
+      html = '<div class="combobox-empty">No matches — type will be used as-is</div>';
+    }
+  }
+  dd.innerHTML = html;
+}
+
+function selectCombobox(rowIdx, name) {
+  updateDest(rowIdx, 'name', name);
+  addBuildingRecent(name);
+  closeCombobox();
+  // Re-render to update the input value
+  renderMain();
+}
 
 // ── CSV ──
 function parseCSV(text) {
@@ -298,6 +419,7 @@ function loadData(text) {
   document.getElementById('load-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   setTimeout(initMap,300);
+  getBuildingsList(); // preload for typeahead
 }
 
 /**
@@ -318,6 +440,7 @@ function loadFromSheets(rows) {
   document.getElementById('load-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   setTimeout(initMap, 300);
+  getBuildingsList(); // preload for typeahead
 }
 
 // File input and drag/drop listeners are attached by config.js after injecting the load screen UI
@@ -445,6 +568,44 @@ function updateMap() {
     bounds.extend([dlng, dlat]);
   });
 
+  // Nearby signs — ghosted markers showing adjacent signs and shared destinations
+  var currentDestNames = new Set(s.dests.map(function(d) { return (d.name || '').trim().toLowerCase(); }));
+  var nearbyRadius = 0.003; // ~300m in degrees at 40°N
+  state.signs.forEach(function(ns) {
+    if (ns.id === s.id) return;
+    var nlat = parseFloat(ns.lat), nlng = parseFloat(ns.lng);
+    if (isNaN(nlat) || isNaN(nlng)) return;
+    if (Math.abs(nlat - lat) > nearbyRadius || Math.abs(nlng - lng) > nearbyRadius) return;
+
+    // Build popup showing destinations, highlighting shared ones
+    var destHtml = ns.dests.map(function(d) {
+      var name = (d.name || '').trim();
+      var shared = currentDestNames.has(name.toLowerCase());
+      return '<div class="nearby-dest' + (shared ? ' nearby-shared' : '') + '">' + escHtml(name) + '</div>';
+    }).join('');
+    var hasShared = ns.dests.some(function(d) { return currentDestNames.has((d.name||'').trim().toLowerCase()); });
+    var popupContent = '<div class="nearby-popup">' +
+      '<div class="nearby-popup-id">' + escHtml(ns.id) + ' <span class="nearby-popup-type">' + (TYPE_LABELS[ns.type]||ns.type) + '</span></div>' +
+      destHtml +
+      (hasShared ? '<div class="nearby-overlap-note">⚠ shared destinations</div>' : '') +
+      '</div>';
+
+    var ghostEl = document.createElement('div');
+    ghostEl.className = 'nearby-sign-marker' + (hasShared ? ' nearby-has-overlap' : '');
+    ghostEl.innerHTML = getTypeIcon(ns.type);
+
+    var popup = new maplibregl.Popup({ closeButton: false, maxWidth: '200px', className: 'nearby-sign-popup', offset: 12 })
+      .setHTML(popupContent);
+
+    var marker = new maplibregl.Marker({ element: ghostEl, anchor: 'center' })
+      .setLngLat([nlng, nlat])
+      .setPopup(popup)
+      .addTo(map);
+    destMarkers.push(marker);
+
+    bounds.extend([nlng, nlat]);
+  });
+
   // Native bearing rotation — no CSS hack needed
   var rot = s._facing ? DIR_DEGS[s._facing] : 0;
 
@@ -513,9 +674,35 @@ function statusColor(s){return s==='approved'?'#30D158':s==='edited'?'#FFD60A':s
 
 // ── FILTER & COUNTS ──
 function applyFilter() {
-  state.filter=document.getElementById('type-filter').value;
-  state.filtered=state.filter?state.signs.filter(s=>s.type===state.filter):state.signs.slice();
-  state.current=0; render();
+  state.filter = document.getElementById('type-filter').value;
+  var statusEl = document.getElementById('status-filter');
+  state.statusFilter = statusEl ? statusEl.value : state.statusFilter;
+  var result = state.signs.slice();
+  if (state.filter) result = result.filter(function(s) { return s.type === state.filter; });
+  if (state.statusFilter) result = result.filter(function(s) { return s.status === state.statusFilter; });
+  if (state.showMine) {
+    var me = getReviewer();
+    result = result.filter(function(s) { return s.reviewedBy === me; });
+  }
+  state.filtered = result;
+  state.current = 0;
+  render();
+}
+function toggleShowMine() {
+  var me = getReviewer();
+  if (!me) { requireReviewer(toggleShowMine); return; }
+  state.showMine = !state.showMine;
+  var btn = document.getElementById('btn-show-mine');
+  if (btn) btn.classList.toggle('filter-active', state.showMine);
+  applyFilter();
+}
+function setStatusFilter(val) {
+  state.statusFilter = state.statusFilter === val ? '' : val;
+  // Update button states
+  document.querySelectorAll('.status-filter-btn').forEach(function(b) {
+    b.classList.toggle('filter-active', b.dataset.status === state.statusFilter);
+  });
+  applyFilter();
 }
 function getCounts() {
   const s=state.signs;
@@ -557,7 +744,7 @@ function buildDestTable(dests, sign, editing, facingOffset) {
     if (editing) {
       html+=`<tr>
         <td>${arrowPickerHTML(d.deg,origIdx)}</td>
-        <td><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${origIdx},'name',this.value)"></td>
+        <td class="combobox-wrap"><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${origIdx},'name',this.value);updateComboboxResults(this.value)" onfocus="openCombobox(this,${origIdx})" onblur="setTimeout(closeCombobox,200)"></td>
         <td><input class="edit-input ttd-input" value="${escHtml(d.ttd)}" oninput="updateDest(${origIdx},'ttd',this.value)"></td>
         <td><button class="remove-btn" onclick="removeDest(${origIdx})">×</button></td>
       </tr>`;
@@ -629,18 +816,24 @@ function renderMain(){
         <div class="sign-card-type">${TYPE_LABELS[s.type]||s.type}</div>
         <div class="sign-card-nbhd">${s.nbhd}</div>
         <div class="sign-card-coords">${parseFloat(s.lat).toFixed(5)}, ${parseFloat(s.lng).toFixed(5)}</div>
-        <div class="facing-picker">
-          <span class="facing-label">Facing</span>
+        <div class="facing-picker${window.IS_ADMIN ? '' : ' facing-locked'}">
+          <span class="facing-label">Facing${window.IS_ADMIN ? '' : ' <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style="margin-left:4px;opacity:.5"><path d="M4 4v2h-.25A1.75 1.75 0 0 0 2 7.75v5.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0 0 14 13.25v-5.5A1.75 1.75 0 0 0 12.25 6H12V4a4 4 0 1 0-8 0Zm6.5 2V4a2.5 2.5 0 0 0-5 0v2ZM8 9.5a1.5 1.5 0 0 1 .75 2.8v.95a.75.75 0 0 1-1.5 0v-.95A1.5 1.5 0 0 1 8 9.5Z"/></svg>'}</span>
           <div class="facing-row">
             <div class="facing-compass">${facingCompassSvg(s._facing)}</div>
             <div class="facing-btns">
               ${['N','NE','E','SE','S','SW','W','NW'].map(function(dir) {
                 var active = s._facing===dir ? ' active' : '';
-                return '<button class="facing-btn'+active+'" onclick="setFacing(\''+dir+'\')">'+dir+'</button>';
+                if (window.IS_ADMIN) {
+                  return '<button class="facing-btn'+active+'" onclick="setFacing(\''+dir+'\')">'+dir+'</button>';
+                } else {
+                  return '<button class="facing-btn'+active+'" disabled>'+dir+'</button>';
+                }
               }).join('')}
-              ${s._facing ? '<button class="facing-btn facing-clear" onclick="setFacing(null)">&times;</button>' : ''}
+              ${s._facing && window.IS_ADMIN ? '<button class="facing-btn facing-clear" onclick="setFacing(null)">&times;</button>' : ''}
             </div>
           </div>
+          <div class="dir-comment-thread" id="dir-comment-thread"></div>
+          ${!window.IS_ADMIN ? '<div class="direction-comment-input"><input class="edit-input" id="dir-comment-input" placeholder="Suggest a change or leave a note..." maxlength="300" onkeydown="if(event.key===\'Enter\')postDirectionComment()"><button class="comment-send-btn" onclick="postDirectionComment()">Post</button></div>' : ''}
         </div>
       </div>
       <div class="map-clip"><div id="sign-map"></div></div>
@@ -722,6 +915,7 @@ function renderMain(){
   setTimeout(initMap,200);
   // Load comments for this sign from Firebase
   if (typeof loadComments === 'function') loadComments(s.id);
+  if (typeof loadDirectionComments === 'function') loadDirectionComments(s.id);
 }
 
 var commentsOpen = false;
@@ -745,10 +939,28 @@ function postComment() {
   });
 }
 
+function postDirectionComment() {
+  var input = document.getElementById('dir-comment-input');
+  var text = input ? input.value.trim() : '';
+  if (!text) return;
+  var s = state.filtered[state.current];
+  requireReviewer(function() {
+    if (typeof fbPostDirectionComment === 'function') {
+      fbPostDirectionComment(s.id, text, getReviewer());
+      input.value = '';
+    }
+  });
+}
+
 // ── ACTIONS ──
 function setFacing(dir) {
   const s = state.filtered[state.current];
   s._facing = dir;
+
+  // Log direction change to Firebase
+  if (typeof fbLogDirectionChange === 'function') {
+    fbLogDirectionChange(s.id, dir, getReviewer());
+  }
 
   // Update facing buttons without full re-render
   var btns = document.querySelectorAll('.facing-btn');
@@ -900,6 +1112,14 @@ function toggleMapView() {
   const btn = document.getElementById('map-toggle-btn');
 
   if (mapViewActive) {
+    // Close freq report if open
+    if (freqViewActive) {
+      freqViewActive = false;
+      document.getElementById('freq-report').classList.remove('visible');
+      var freqBtn = document.getElementById('freq-toggle-btn');
+      freqBtn.style.borderColor = '';
+      freqBtn.style.color = '';
+    }
     mainPanel.style.display = 'none';
     overviewPanel.classList.add('visible');
     btn.style.borderColor = 'var(--cu-gold)';
@@ -956,7 +1176,7 @@ function updateOverviewMarkers() {
     <div class="map-stat" style="color:var(--cu-gold);border-left:1px solid var(--cu-border);padding-left:1.5rem">${c.total} signs total</div>
   `;
 
-  state.signs.forEach((s, globalIdx) => {
+  state.filtered.forEach((s, filteredIdx) => {
     const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
     if (isNaN(lat) || isNaN(lng)) return;
 
@@ -974,7 +1194,7 @@ function updateOverviewMarkers() {
         <div class="popup-id">${s.id}</div>
         <div class="popup-nbhd">${s.nbhd} · ${TYPE_LABELS[s.type]||s.type}</div>
         <div class="popup-dests">${destList}${moreCount}</div>
-        <button class="popup-review-btn" onclick="openReviewFromMap(${globalIdx})">Review this sign →</button>
+        <button class="popup-review-btn" onclick="openReviewFromMap(${filteredIdx})">Review this sign →</button>
       </div>
     `;
 
@@ -989,22 +1209,168 @@ function updateOverviewMarkers() {
   });
 }
 
-function openReviewFromMap(globalIdx) {
+function openReviewFromMap(filteredIdx) {
   mapViewActive = true;
   toggleMapView();
-  const s = state.signs[globalIdx];
-  const filteredIdx = state.filtered.findIndex(x => x.id === s.id);
-  if (filteredIdx >= 0) goTo(filteredIdx);
-  else {
-    document.getElementById('type-filter').value = '';
-    applyFilter();
-    const idx2 = state.filtered.findIndex(x => x.id === s.id);
-    if (idx2 >= 0) goTo(idx2);
-  }
+  if (filteredIdx >= 0 && filteredIdx < state.filtered.length) goTo(filteredIdx);
 }
 
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function cv(v){const s=(v||'').toString();return(s.includes(',')||s.includes('"')||s.includes('\n'))?`"${s.replace(/"/g,'""')}"`  :s;}
+
+// ── BUILDING FREQUENCY REPORT ──
+let freqViewActive = false;
+let freqSortField = 'count';
+let freqSortAsc = false;
+
+function toggleFreqReport() {
+  freqViewActive = !freqViewActive;
+  const mainPanel = document.getElementById('main-panel');
+  const freqPanel = document.getElementById('freq-report');
+  const mapPanel = document.getElementById('map-overview');
+  const freqBtn = document.getElementById('freq-toggle-btn');
+  const mapBtn = document.getElementById('map-toggle-btn');
+
+  if (freqViewActive) {
+    // Close map view if open
+    if (mapViewActive) {
+      mapViewActive = false;
+      mapPanel.classList.remove('visible');
+      mapBtn.style.borderColor = '';
+      mapBtn.style.color = '';
+    }
+    mainPanel.style.display = 'none';
+    freqPanel.classList.add('visible');
+    freqBtn.style.borderColor = 'var(--cu-gold)';
+    freqBtn.style.color = 'var(--cu-gold)';
+    populateFreqZones();
+    updateFreqReport();
+  } else {
+    mainPanel.style.display = '';
+    freqPanel.classList.remove('visible');
+    freqBtn.style.borderColor = '';
+    freqBtn.style.color = '';
+  }
+}
+
+function populateFreqZones() {
+  const zoneSet = new Set();
+  state.signs.forEach(function(s) { if (s.nbhd) zoneSet.add(s.nbhd); });
+  const sel = document.getElementById('freq-zone-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All zones</option>' +
+    Array.from(zoneSet).sort().map(function(z) {
+      return '<option value="' + escHtml(z) + '"' + (z === current ? ' selected' : '') + '>' + escHtml(z) + '</option>';
+    }).join('');
+}
+
+function buildFreqData() {
+  const typeFilter = document.getElementById('freq-type-filter').value;
+  const zoneFilter = document.getElementById('freq-zone-filter').value;
+
+  // Filter signs
+  var signs = state.signs;
+  if (typeFilter) signs = signs.filter(function(s) { return s.type === typeFilter; });
+  if (zoneFilter) signs = signs.filter(function(s) { return s.nbhd === zoneFilter; });
+
+  // Aggregate by building name
+  var buildingMap = {};
+  signs.forEach(function(s) {
+    s.dests.forEach(function(d) {
+      var name = (d.name || '').trim();
+      if (!name) return;
+      if (!buildingMap[name]) {
+        buildingMap[name] = { name: name, count: 0, zones: new Set(), types: new Set(), signIds: [] };
+      }
+      buildingMap[name].count++;
+      if (s.nbhd) buildingMap[name].zones.add(s.nbhd);
+      if (s.type) buildingMap[name].types.add(s.type);
+      if (buildingMap[name].signIds.indexOf(s.id) === -1) buildingMap[name].signIds.push(s.id);
+    });
+  });
+
+  var rows = Object.values(buildingMap);
+
+  // Sort
+  rows.sort(function(a, b) {
+    var va, vb;
+    if (freqSortField === 'name') {
+      va = a.name.toLowerCase(); vb = b.name.toLowerCase();
+      return freqSortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (vb < va ? -1 : vb > va ? 1 : 0);
+    } else if (freqSortField === 'zones') {
+      va = Array.from(a.zones).sort().join(', ').toLowerCase();
+      vb = Array.from(b.zones).sort().join(', ').toLowerCase();
+      return freqSortAsc ? (va < vb ? -1 : va > vb ? 1 : 0) : (vb < va ? -1 : vb > va ? 1 : 0);
+    } else {
+      va = a.count; vb = b.count;
+      return freqSortAsc ? va - vb : vb - va;
+    }
+  });
+
+  return { rows: rows, totalSigns: signs.length };
+}
+
+function updateFreqReport() {
+  var data = buildFreqData();
+  var tbody = document.getElementById('freq-tbody');
+  var summary = document.getElementById('freq-summary');
+
+  summary.innerHTML = '<span class="freq-stat">' + data.rows.length + ' buildings</span>' +
+    '<span class="freq-stat">' + data.totalSigns + ' signs</span>' +
+    '<span class="freq-stat">' + data.rows.reduce(function(s, r) { return s + r.count; }, 0) + ' destination references</span>';
+
+  tbody.innerHTML = data.rows.map(function(r) {
+    var zones = Array.from(r.zones).sort().map(function(z) {
+      return '<span class="freq-zone-pill">' + escHtml(z) + '</span>';
+    }).join(' ');
+    var types = Array.from(r.types).sort().map(function(t) {
+      return '<span class="freq-type-pill freq-type-' + t.toLowerCase() + '">' + t + '</span>';
+    }).join(' ');
+    return '<tr>' +
+      '<td class="freq-name">' + escHtml(r.name) + '</td>' +
+      '<td class="freq-count">' + r.count + '</td>' +
+      '<td>' + zones + '</td>' +
+      '<td>' + types + '</td>' +
+      '<td><button class="freq-view-btn" onclick="freqViewSigns(this.dataset.name)" data-name="' + escHtml(r.name) + '">View signs →</button></td>' +
+      '</tr>';
+  }).join('');
+
+  // Update sort icons
+  ['name', 'count', 'zones'].forEach(function(f) {
+    var el = document.getElementById('freq-sort-' + f);
+    if (el) el.textContent = freqSortField === f ? (freqSortAsc ? '↑' : '↓') : '↕';
+  });
+}
+
+function sortFreqBy(field) {
+  if (freqSortField === field) {
+    freqSortAsc = !freqSortAsc;
+  } else {
+    freqSortField = field;
+    freqSortAsc = field === 'name';
+  }
+  updateFreqReport();
+}
+
+function freqViewSigns(buildingName) {
+  // Close freq report
+  freqViewActive = false;
+  document.getElementById('freq-report').classList.remove('visible');
+  document.getElementById('main-panel').style.display = '';
+  var btn = document.getElementById('freq-toggle-btn');
+  btn.style.borderColor = '';
+  btn.style.color = '';
+
+  // Filter sign list to show only signs containing this building
+  state.filtered = state.signs.filter(function(s) {
+    return s.dests.some(function(d) { return d.name === buildingName; });
+  });
+  state.current = 0;
+  render();
+
+  // Show a toast so the user knows what happened
+  showSyncToast('Showing ' + state.filtered.length + ' signs with "' + buildingName + '"', 'success');
+}
 
 // ── INIT ──
 initTheme();
