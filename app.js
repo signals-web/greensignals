@@ -585,15 +585,13 @@ function updateMap() {
   });
 
   // Nearby signs — ghosted markers at 50% size/opacity
+  // Uses same getNearbySignData() as the pullout sheet so map + panel stay in sync
   var currentDestNames = new Set(s.dests.map(function(d) { return (d.name || '').trim().toLowerCase(); }));
-  var nearbyRadius = 0.003; // ~300m in degrees at 40°N
-  state.signs.forEach(function(ns) {
-    if (ns.id === s.id) return;
+  var nearbyData = getNearbySignData(s);
+  nearbyData.forEach(function(n) {
+    var ns = n.sign;
     var nlat = parseFloat(ns.lat), nlng = parseFloat(ns.lng);
     if (isNaN(nlat) || isNaN(nlng)) return;
-    if (Math.abs(nlat - lat) > nearbyRadius || Math.abs(nlng - lng) > nearbyRadius) return;
-
-    var hasShared = ns.dests.some(function(d) { return currentDestNames.has((d.name||'').trim().toLowerCase()); });
 
     // Build popup showing destinations, highlighting shared ones
     var destHtml = ns.dests.map(function(d) {
@@ -604,7 +602,7 @@ function updateMap() {
     var popupContent = '<div class="nearby-popup">' +
       '<div class="nearby-popup-id">' + escHtml(ns.id) + ' <span class="nearby-popup-type">' + (TYPE_LABELS[ns.type]||ns.type) + '</span></div>' +
       destHtml +
-      (hasShared ? '<div class="nearby-overlap-note">⚠ shared destinations</div>' : '') +
+      (n.sharedCount > 0 ? '<div class="nearby-overlap-note">⚠ shared destinations</div>' : '') +
       '</div>';
 
     var ghostEl = document.createElement('div');
@@ -620,8 +618,6 @@ function updateMap() {
       .addTo(map);
     destMarkers.push(marker);
     nearbyMarkersBySignId[ns.id] = ghostEl;
-
-    bounds.extend([nlng, nlat]);
   });
 
   // Native bearing rotation — no CSS hack needed
@@ -670,7 +666,7 @@ function updateMap() {
   if (hasDests) {
     var cam = map.cameraForBounds(bounds, { padding: 30 });
     if (cam) {
-      zoom = Math.min(Math.max(Math.floor(cam.zoom) - 1, 13), 18);
+      zoom = Math.min(Math.max(Math.floor(cam.zoom), 15), 18);
     }
   }
   map.jumpTo({ center: [lng, lat], zoom: zoom, bearing: rot });
@@ -1487,7 +1483,7 @@ function getNearbySignData(currentSign) {
     })
     .filter(function(n) { return n.distFt <= MAX_DIST_FT; })
     .sort(function(a, b) { return b.sharedCount - a.sharedCount || a.distFt - b.distFt; })
-    .slice(0, 8);
+    .slice(0, 6);
 }
 
 function renderRightPanel() {
