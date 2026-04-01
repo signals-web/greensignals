@@ -203,6 +203,7 @@ function splitSides(dests, facing) {
 const state = { signs:[], current:0, filtered:[], filter:'', statusFilter:'', showMine:false };
 let map=null, mapMarker=null, destMarkers=[];
 var destMarkersByName = {}; // { 'building name': { dot, label, lineId } }
+var nearbyMarkersBySignId = {}; // { 'sign-id': element }
 
 // ── BUILDINGS SERVICE (swap to Supabase later by editing this section) ──
 var _buildingsCache = null;
@@ -510,6 +511,7 @@ function updateMap() {
   });
   destMarkers = [];
   destMarkersByName = {};
+  nearbyMarkersBySignId = {};
 
   // Sign marker — horizontal bar representing sign panel
   // Map bearing already rotates to face the right direction,
@@ -617,6 +619,7 @@ function updateMap() {
       .setPopup(popup)
       .addTo(map);
     destMarkers.push(marker);
+    nearbyMarkersBySignId[ns.id] = ghostEl;
 
     bounds.extend([nlng, nlat]);
   });
@@ -1525,11 +1528,12 @@ function renderNearbySheet() {
         var isOverlap = currentDests[d.name.trim().toLowerCase()];
         return '<div class="ns-dest' + (isOverlap ? ' ns-overlap' : '') + '">' + escHtml(d.name) + '</div>';
       }).join('');
-      html += '<div class="ns-item">' +
+      var safeId = escHtml(n.sign.id);
+      html += '<div class="ns-item" onmouseenter="highlightNearbySign(\'' + safeId + '\')" onmouseleave="unhighlightNearbySign(\'' + safeId + '\')">' +
         '<div class="ns-item-row"' + clickAttr + '>' +
         '<span class="ns-icon">' + getTypeIcon(n.sign.type) + '</span>' +
         '<span class="status-dot dot-' + n.sign.status + '"></span>' +
-        '<span class="ns-id">' + escHtml(n.sign.id) + '</span>' +
+        '<span class="ns-id">' + safeId + '</span>' +
         sharedBadge +
         '<span class="ns-dist">' + n.distFt + ' ft</span>' +
         '</div>' +
@@ -1542,6 +1546,24 @@ function renderNearbySheet() {
   if (body) body.innerHTML = html;
 }
 
+
+function highlightNearbySign(signId) {
+  var el = nearbyMarkersBySignId[signId];
+  if (!el) return;
+  el.style.opacity = '1';
+  el.style.transform = 'scale(2.5)';
+  el.style.filter = 'none';
+  el.style.zIndex = '10';
+}
+
+function unhighlightNearbySign(signId) {
+  var el = nearbyMarkersBySignId[signId];
+  if (!el) return;
+  el.style.opacity = '';
+  el.style.transform = '';
+  el.style.filter = '';
+  el.style.zIndex = '';
+}
 
 function toggleRPSection(id) {
   var el = document.getElementById(id);

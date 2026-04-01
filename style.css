@@ -135,7 +135,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 /* Nearby map markers — 50% size, 50% opacity */
 .nearby-marker {
   width: 10px; height: 10px; cursor: pointer; opacity: .5;
-  transition: opacity .15s;
+  transition: all .15s;
 }
 .nearby-marker:hover { opacity: .9; }
 .nearby-marker svg { width: 10px; height: 10px; }
