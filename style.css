@@ -146,13 +146,13 @@ html.light .side-col { background: rgba(0,0,0,.04); }
 
 /* Nearby sign ghost markers */
 .nearby-sign-marker {
-  width: 18px; height: 18px; opacity: .35; cursor: pointer;
-  transition: opacity .15s; filter: grayscale(.5);
+  width: 10px; height: 10px; opacity: .2; cursor: pointer;
+  transition: opacity .15s; filter: grayscale(.6);
 }
-.nearby-sign-marker:hover { opacity: .8; filter: none; }
-.nearby-sign-marker.nearby-has-overlap { opacity: .55; filter: grayscale(.2); }
-.nearby-sign-marker.nearby-has-overlap:hover { opacity: 1; filter: none; }
-.nearby-sign-marker svg { width: 18px; height: 18px; }
+.nearby-sign-marker:hover { opacity: .7; filter: none; }
+.nearby-sign-marker.nearby-has-overlap { opacity: .3; filter: grayscale(.3); }
+.nearby-sign-marker.nearby-has-overlap:hover { opacity: .9; filter: none; }
+.nearby-sign-marker svg { width: 10px; height: 10px; }
 
 .nearby-sign-popup .maplibregl-popup-content {
   background: var(--cu-dark); border: 1px solid var(--cu-border); border-radius: 6px;
