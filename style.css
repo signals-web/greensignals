@@ -213,7 +213,7 @@ html.light .map-back-btn { background: var(--cu-black); color: #fff; border-colo
 html.light .map-back-btn:hover { background: var(--cu-gold); color: #fff; border-color: var(--cu-gold); }
 
 /* MAIN */
-.main-panel { overflow-y: auto; background: var(--cu-black); position: relative; }
+.main-panel { overflow-y: auto; overflow-x: hidden; background: var(--cu-black); position: relative; }
 .main-panel::-webkit-scrollbar { width: 4px; }
 .main-panel::-webkit-scrollbar-thumb { background: var(--cu-border); }
 .panel-inner { max-width: 950px; margin: 0 auto; padding: 2rem 2rem 4rem; }
@@ -699,3 +699,32 @@ html.light .bn-table tbody tr { border-bottom-color: rgba(0,0,0,.06); }
 .project-card:hover { background: var(--cu-mid); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
 .project-card-name { font-size: 20px; font-weight: 500; margin-bottom: .5rem; }
 .project-card-sub { font-size: 13px; color: var(--cu-muted); font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+
+/* RESPONSIVE — shrink columns on smaller screens */
+@media (max-width: 1400px) {
+  #app.visible { grid-template-columns: 200px 1fr 240px; }
+  .nearby-sheet { width: 240px; }
+  .nearby-sheet.hidden { transform: translateX(250px); }
+  .panel-inner { padding: 1.5rem 1.5rem 4rem; }
+}
+@media (max-width: 1200px) {
+  #app.visible { grid-template-columns: 180px 1fr 220px; }
+  .sidebar-header { padding: 1rem .75rem .75rem; }
+  .sign-list-item { padding: 8px .75rem; font-size: 12px; }
+  .nearby-sheet { width: 220px; }
+  .nearby-sheet.hidden { transform: translateX(230px); }
+  .panel-inner { padding: 1.25rem 1rem 4rem; }
+  .sign-card-id { font-size: 30px; }
+  .sign-card-header-left { padding: 1rem; }
+  .ns-item { padding: 6px .75rem; }
+  .ns-dest { font-size: 11px; }
+}
+@media (max-width: 1024px) {
+  #app.visible { grid-template-columns: 160px 1fr 200px; }
+  .nearby-sheet { width: 200px; }
+  .nearby-sheet.hidden { transform: translateX(210px); }
+  .panel-inner { padding: 1rem .75rem 3rem; max-width: none; }
+  .sign-card-header { grid-template-columns: 1fr 1fr; }
+  .sign-card-id { font-size: 26px; }
+  .rp-tool-btn { font-size: 12px; padding: 8px 10px; }
+}
