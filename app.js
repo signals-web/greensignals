@@ -1551,18 +1551,22 @@ function highlightNearbySign(signId) {
   var el = nearbyMarkersBySignId[signId];
   if (!el) return;
   el.style.opacity = '1';
-  el.style.transform = 'scale(2.5)';
-  el.style.filter = 'none';
+  el.style.width = '24px';
+  el.style.height = '24px';
   el.style.zIndex = '10';
+  var svg = el.querySelector('svg');
+  if (svg) { svg.style.width = '24px'; svg.style.height = '24px'; }
 }
 
 function unhighlightNearbySign(signId) {
   var el = nearbyMarkersBySignId[signId];
   if (!el) return;
   el.style.opacity = '';
-  el.style.transform = '';
-  el.style.filter = '';
+  el.style.width = '';
+  el.style.height = '';
   el.style.zIndex = '';
+  var svg = el.querySelector('svg');
+  if (svg) { svg.style.width = ''; svg.style.height = ''; }
 }
 
 function toggleRPSection(id) {
