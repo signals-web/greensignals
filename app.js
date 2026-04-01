@@ -1227,6 +1227,7 @@ let overviewMarkers = [];
 let mapViewActive = false;
 
 function toggleMapView() {
+  closeNearbySheet();
   mapViewActive = !mapViewActive;
   const mainPanel = document.getElementById('main-panel');
   const overviewPanel = document.getElementById('map-overview');
@@ -1349,6 +1350,7 @@ let freqSortField = 'count';
 let freqSortAsc = false;
 
 function toggleFreqReport() {
+  closeNearbySheet();
   freqViewActive = !freqViewActive;
   const mainPanel = document.getElementById('main-panel');
   const freqPanel = document.getElementById('freq-report');
@@ -1540,16 +1542,32 @@ function renderRightPanel() {
   restoreRPCollapsed();
 }
 
-// ── NEARBY SIGNS PULLOUT SHEET ──
+// ── NEARBY SIGNS PANEL ──
+function closeNearbySheet() {
+  var sheet = document.getElementById('nearby-sheet');
+  if (!sheet || sheet.classList.contains('hidden')) return;
+  sheet.classList.add('hidden');
+  var app = document.getElementById('app');
+  if (app) app.classList.remove('nearby-open');
+  var btn = document.querySelector('.nearby-toggle-btn');
+  if (btn) btn.classList.remove('active');
+  if (map) setTimeout(function() { map.resize(); }, 50);
+}
+
 function toggleNearbySheet() {
   var sheet = document.getElementById('nearby-sheet');
   if (!sheet) return;
   var isHidden = sheet.classList.contains('hidden');
   sheet.classList.toggle('hidden');
+  // Toggle grid layout — nearby panel becomes a column
+  var app = document.getElementById('app');
+  if (app) app.classList.toggle('nearby-open', isHidden);
   // Update toggle button state
   var btn = document.querySelector('.nearby-toggle-btn');
   if (btn) btn.classList.toggle('active', isHidden);
   if (isHidden) renderNearbySheet();
+  // Resize map after layout change
+  if (map) setTimeout(function() { map.resize(); }, 50);
 }
 
 function renderNearbySheet() {
@@ -1644,6 +1662,7 @@ let bnSortAsc = false;
 let bnData = []; // computed list of { name, count, zones, signs, status }
 
 function openBuildingNames() {
+  closeNearbySheet();
   bnViewActive = true;
   var mainPanel = document.getElementById('main-panel');
   var bnPanel = document.getElementById('building-names');
