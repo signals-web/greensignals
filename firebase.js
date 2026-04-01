@@ -158,6 +158,35 @@ function _initFirebase() {
 
     function _escComment(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+    // ── BUILDING NAMES ──
+    const bnRef = ref(db, `projects/${projectPath}/buildingNames`);
+    window._bnFirebaseCache = {};
+
+    onValue(bnRef, (snapshot) => {
+      window._bnFirebaseCache = snapshot.val() || {};
+      // Live-update building names view if open
+      if (window.bnViewActive && typeof computeBuildingNames === 'function') {
+        computeBuildingNames();
+        renderBuildingNames();
+      }
+    });
+
+    window.fbSaveBuildingName = function(originalName, fields) {
+      import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js').then(({ ref: dbRef, update }) => {
+        const key = originalName.replace(/[.#$/[\]]/g, '_');
+        const data = Object.assign({}, fields, {
+          originalName: originalName,
+          updatedBy: getReviewer() || 'Anonymous',
+          updatedAt: Date.now()
+        });
+        update(dbRef(db, `projects/${projectPath}/buildingNames/${key}`), data);
+      });
+    };
+
+    window.fbSetBNStatus = function(originalName, status) {
+      window.fbSaveBuildingName(originalName, { status: status });
+    };
+
     window.firebaseReady = true;
     console.log(`Firebase connected (project: ${projectPath})`);
 

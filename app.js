@@ -146,6 +146,20 @@ function facingCompassSvg(facing) {
   return '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z" transform="rotate('+rot+' 12 12)"/></svg>';
 }
 
+// ── BUILDING NAME RESOLUTION ──
+function getOfficialName(originalName) {
+  var cache = window._bnFirebaseCache || {};
+  var key = (originalName || '').replace(/[.#$/[\]]/g, '_');
+  var entry = cache[key];
+  if (entry && entry.officialName && entry.officialName !== originalName) {
+    return { display: entry.officialName, original: originalName, standardized: true, deprecated: entry.status === 'deprecated' };
+  }
+  if (entry && entry.status === 'deprecated') {
+    return { display: originalName, original: originalName, standardized: false, deprecated: true };
+  }
+  return { display: originalName, original: originalName, standardized: false, deprecated: false };
+}
+
 // ── DOUBLE-SIDED SIGN LOGIC ──
 // Default (no facing): front arrows ↑(270),↗(315),↖(225); back ↓(90),↘(45),↙(135); side →(0),←(180)
 const DIR_DEGS = { N:0, NE:45, E:90, SE:135, S:180, SW:225, W:270, NW:315 };
@@ -304,14 +318,46 @@ function updateComboboxResults(query) {
     if (!html) html = '<div class="combobox-empty">Start typing to search buildings...</div>';
   } else {
     var results = searchBuildings(query);
+    // Check for approved name matches from Firebase building names
+    var bnCache = window._bnFirebaseCache || {};
+    var approvedMatches = [];
+    var aliasMatches = [];
+    var deprecatedNames = {};
+    Object.keys(bnCache).forEach(function(key) {
+      var entry = bnCache[key];
+      if (!entry) return;
+      if (entry.status === 'deprecated') deprecatedNames[(entry.originalName || '').toLowerCase()] = entry.officialName || '';
+      if (entry.status === 'approved' && entry.officialName) {
+        if (entry.officialName.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+          approvedMatches.push(entry);
+        }
+      }
+      // Alias matching: search notes field
+      if (entry.notes && entry.notes.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+        aliasMatches.push(entry);
+      }
+    });
+    // Show alias matches first
+    if (aliasMatches.length) {
+      html += '<div class="combobox-section">Alias match</div>';
+      aliasMatches.forEach(function(entry) {
+        var name = entry.officialName || entry.originalName;
+        var safeName = escHtml(name).replace(/'/g, "\\'");
+        html += '<div class="combobox-item combobox-alias" onmousedown="selectCombobox(' + rowIdx + ',\'' + safeName + '\')">' +
+          escHtml(name) + '<span class="combobox-zone">alias</span></div>';
+      });
+    }
     if (results.length) {
       results.forEach(function(b) {
         var isFav = favs.indexOf(b.name) >= 0;
-        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(b.name).replace(/'/g, "\\'") + '\')">' +
+        var isDeprecated = deprecatedNames[b.name.toLowerCase()] !== undefined;
+        var depClass = isDeprecated ? ' combobox-deprecated' : '';
+        var depLabel = isDeprecated ? '<span class="combobox-dep-warn">deprecated</span>' : '';
+        html += '<div class="combobox-item' + depClass + '" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(b.name).replace(/'/g, "\\'") + '\')">' +
           '<span class="combobox-fav' + (isFav ? ' active' : '') + '" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'' + escHtml(query).replace(/'/g, "\\'") + '\')">' + (isFav ? '★' : '☆') + '</span>' +
-          escHtml(b.name) + '<span class="combobox-zone">' + escHtml(b.zone) + '</span></div>';
+          escHtml(b.name) + depLabel + '<span class="combobox-zone">' + escHtml(b.zone) + '</span></div>';
       });
-    } else {
+    } else if (!aliasMatches.length) {
       html = '<div class="combobox-empty">No matches — type will be used as-is</div>';
     }
   }
@@ -856,9 +902,12 @@ function buildDestTable(dests, sign, editing, facingOffset) {
     });
     // Render sorted rows — arrow on every row, same-direction rows adjacent
     viewRows.forEach(function(r) {
+      var resolved = getOfficialName(r.name);
+      var nameClass = 'dest-name-cell' + (r.name ? '' : ' empty') + (resolved.standardized ? ' dest-standardized' : '') + (resolved.deprecated ? ' dest-deprecated' : '');
+      var tooltip = resolved.standardized ? ' title="Original: ' + escHtml(r.name) + '"' : (resolved.deprecated ? ' title="Deprecated name"' : '');
       html += `<tr>`;
       html += `<td>${arrowDisplay(r.displayDeg)}</td>`;
-      html += `<td class="dest-name-cell${r.name?'':' empty'}" data-dest-name="${escHtml(r.name)}" onmouseenter="highlightDest(this)" onmouseleave="unhighlightDest(this)">${escHtml(r.name)||'—'}</td>`;
+      html += `<td class="${nameClass}" data-dest-name="${escHtml(r.name)}"${tooltip} onmouseenter="highlightDest(this)" onmouseleave="unhighlightDest(this)">${escHtml(resolved.display)||'—'}</td>`;
       html += `<td>${r.ttd?`<span class="ttd-chip">${escHtml(r.ttd)}</span>`:''}</td>`;
       html += `</tr>`;
     });
@@ -1640,11 +1689,13 @@ function populateBNZones() {
   });
 }
 
+function bnSanitizeKey(name) {
+  return (name || '').replace(/[.#$/[\]]/g, '_');
+}
+
 function computeBuildingNames() {
   var nameMap = {};
-  // Get BN statuses from localStorage
-  var bnStatuses = {};
-  try { bnStatuses = JSON.parse(localStorage.getItem('cub_bn_statuses') || '{}'); } catch(e) {}
+  var fbCache = window._bnFirebaseCache || {};
 
   state.signs.forEach(function(s) {
     s.dests.forEach(function(d) {
@@ -1659,13 +1710,20 @@ function computeBuildingNames() {
   });
 
   bnData = Object.values(nameMap).map(function(b) {
+    var key = bnSanitizeKey(b.name);
+    var fb = fbCache[key] || {};
     return {
       name: b.name,
+      officialName: fb.officialName || '',
+      shortName: fb.shortName || '',
+      notes: fb.notes || '',
       count: b.count,
       zones: Array.from(b.zones).sort(),
       types: Array.from(b.types),
       signs: b.signs,
-      status: bnStatuses[b.name] || 'pending'
+      status: fb.status || 'pending',
+      updatedBy: fb.updatedBy || '',
+      updatedAt: fb.updatedAt || null
     };
   });
 }
@@ -1673,29 +1731,39 @@ function computeBuildingNames() {
 function renderBuildingNames() {
   var search = (document.getElementById('bn-search').value || '').trim().toLowerCase();
   var zone = document.getElementById('bn-zone-filter').value;
+  var statusFilter = (document.getElementById('bn-status-filter') || {}).value || '';
 
   var filtered = bnData.filter(function(b) {
-    if (search && b.name.toLowerCase().indexOf(search) < 0) return false;
+    if (search) {
+      var haystack = (b.name + ' ' + (b.officialName || '') + ' ' + (b.shortName || '') + ' ' + (b.notes || '')).toLowerCase();
+      if (haystack.indexOf(search) < 0) return false;
+    }
     if (zone && b.zones.indexOf(zone) < 0) return false;
+    if (statusFilter && b.status !== statusFilter) return false;
     return true;
   });
 
   // Sort
   filtered.sort(function(a, b) {
     var result = 0;
-    if (bnSortField === 'name') result = a.name.localeCompare(b.name);
-    else if (bnSortField === 'count') result = a.count - b.count;
+    if (bnSortField === 'name') {
+      var aName = a.officialName || a.name;
+      var bName = b.officialName || b.name;
+      result = aName.localeCompare(bName);
+    } else if (bnSortField === 'count') result = a.count - b.count;
     return bnSortAsc ? result : -result;
   });
 
   // Summary
   var approved = bnData.filter(function(b) { return b.status === 'approved'; }).length;
   var flagged = bnData.filter(function(b) { return b.status === 'flagged'; }).length;
+  var deprecated = bnData.filter(function(b) { return b.status === 'deprecated'; }).length;
   var pending = bnData.filter(function(b) { return b.status === 'pending'; }).length;
   document.getElementById('bn-summary').innerHTML =
     '<span class="bn-stat">' + bnData.length + ' buildings</span>' +
     '<span class="bn-stat" style="color:var(--approve)">' + approved + ' approved</span>' +
     '<span class="bn-stat" style="color:var(--flag)">' + flagged + ' flagged</span>' +
+    (deprecated ? '<span class="bn-stat" style="color:var(--cu-muted);text-decoration:line-through">' + deprecated + ' deprecated</span>' : '') +
     '<span class="bn-stat">' + pending + ' pending</span>';
 
   // Sort icons
@@ -1707,21 +1775,93 @@ function renderBuildingNames() {
   // Table rows
   var tbody = document.getElementById('bn-tbody');
   tbody.innerHTML = filtered.map(function(b) {
-    var zonePills = b.zones.map(function(z) { return '<span class="bn-zone-pill">' + escHtml(z) + '</span>'; }).join('');
+    var safeName = escHtml(b.name).replace(/'/g, "\\'");
+    var displayName = b.officialName || b.name;
+    var shortName = b.shortName || '';
+    var nameChanged = b.officialName && b.officialName !== b.name;
     var statusCls = 'bn-status-' + b.status;
     var statusLabel = b.status.charAt(0).toUpperCase() + b.status.slice(1);
+
+    // Action buttons
     var actions = '';
-    if (b.status !== 'approved') actions += '<button class="bn-approve-btn" onclick="setBNStatus(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\',\'approved\')">✓</button>';
-    if (b.status !== 'flagged') actions += '<button class="bn-flag-btn" onclick="setBNStatus(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\',\'flagged\')">⚑</button>';
-    if (b.status !== 'pending') actions += '<button class="bn-approve-btn" onclick="setBNStatus(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\',\'pending\')" style="color:var(--cu-muted)">↺</button>';
-    return '<tr>' +
-      '<td class="bn-name">' + escHtml(b.name) + '</td>' +
+    if (b.status !== 'approved') actions += '<button class="bn-action-btn bn-approve-btn" onclick="setBNStatus(\'' + safeName + '\',\'approved\')" title="Approve">✓</button>';
+    if (b.status !== 'flagged') actions += '<button class="bn-action-btn bn-flag-btn" onclick="setBNStatus(\'' + safeName + '\',\'flagged\')" title="Flag">⚑</button>';
+    if (b.status !== 'deprecated') actions += '<button class="bn-action-btn bn-deprecate-btn" onclick="setBNStatus(\'' + safeName + '\',\'deprecated\')" title="Deprecate">✗</button>';
+    if (b.status !== 'pending') actions += '<button class="bn-action-btn bn-reset-btn" onclick="setBNStatus(\'' + safeName + '\',\'pending\')" title="Reset">↺</button>';
+    // Notes toggle
+    actions += '<button class="bn-action-btn bn-notes-btn" onclick="toggleBNNotes(\'' + safeName + '\')" title="Notes / aliases">✎</button>';
+
+    var key = bnSanitizeKey(b.name);
+    var hasNotes = b.notes ? ' has-notes' : '';
+
+    // Updated-by info
+    var metaHtml = '';
+    if (b.updatedBy) {
+      var ago = b.updatedAt ? _bnTimeAgo(b.updatedAt) : '';
+      metaHtml = '<div class="bn-meta">' + escHtml(b.updatedBy) + (ago ? ' · ' + ago : '') + '</div>';
+    }
+
+    return '<tr class="bn-row" data-key="' + key + '">' +
+      '<td class="bn-name bn-editable" contenteditable="true" data-field="officialName" data-original="' + escHtml(b.name) + '" onblur="saveBNField(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur()}">' + escHtml(displayName) + '</td>' +
+      '<td class="bn-short bn-editable" contenteditable="true" data-field="shortName" data-original="' + escHtml(b.name) + '" onblur="saveBNField(this)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur()}">' + escHtml(shortName) + '</td>' +
+      '<td class="bn-original' + (nameChanged ? ' bn-changed' : '') + '">' + escHtml(b.name) + '</td>' +
       '<td class="bn-count">' + b.count + '</td>' +
-      '<td>' + zonePills + '</td>' +
-      '<td><span class="bn-status-pill ' + statusCls + '">' + statusLabel + '</span></td>' +
-      '<td>' + actions + '</td>' +
-      '</tr>';
+      '<td><span class="bn-status-pill ' + statusCls + '">' + statusLabel + '</span>' + metaHtml + '</td>' +
+      '<td class="bn-actions">' + actions + '</td>' +
+      '</tr>' +
+      '<tr class="bn-notes-row" id="bn-notes-' + key + '" style="display:none"><td colspan="6">' +
+      '<div class="bn-notes-wrap">' +
+      '<label class="bn-notes-label">Notes / aliases</label>' +
+      '<textarea class="bn-notes-input" data-original="' + escHtml(b.name) + '" onblur="saveBNNotes(this)" placeholder="Add aliases, comments, style notes...">' + escHtml(b.notes) + '</textarea>' +
+      '</div></td></tr>';
   }).join('');
+}
+
+function _bnTimeAgo(ts) {
+  var s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+function saveBNField(td) {
+  var field = td.getAttribute('data-field');
+  var originalName = td.getAttribute('data-original');
+  var newValue = td.textContent.trim();
+  // If official name is cleared or matches original, store empty (means "use original")
+  if (field === 'officialName' && newValue === originalName) newValue = '';
+  requireReviewer(function() {
+    if (window.fbSaveBuildingName) {
+      var fields = {};
+      fields[field] = newValue;
+      window.fbSaveBuildingName(originalName, fields);
+    }
+    // Optimistic update
+    bnData.forEach(function(b) {
+      if (b.name === originalName) b[field] = newValue;
+    });
+  });
+}
+
+function saveBNNotes(textarea) {
+  var originalName = textarea.getAttribute('data-original');
+  var notes = textarea.value.trim();
+  requireReviewer(function() {
+    if (window.fbSaveBuildingName) {
+      window.fbSaveBuildingName(originalName, { notes: notes });
+    }
+    bnData.forEach(function(b) {
+      if (b.name === originalName) b.notes = notes;
+    });
+  });
+}
+
+function toggleBNNotes(originalName) {
+  var key = bnSanitizeKey(originalName);
+  var row = document.getElementById('bn-notes-' + key);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? '' : 'none';
 }
 
 function sortBNBy(field) {
@@ -1733,14 +1873,14 @@ function sortBNBy(field) {
 function filterBuildingNames() { renderBuildingNames(); }
 
 function setBNStatus(name, status) {
-  var bnStatuses = {};
-  try { bnStatuses = JSON.parse(localStorage.getItem('cub_bn_statuses') || '{}'); } catch(e) {}
-  if (status === 'pending') delete bnStatuses[name];
-  else bnStatuses[name] = status;
-  localStorage.setItem('cub_bn_statuses', JSON.stringify(bnStatuses));
-  // Update in-memory
-  bnData.forEach(function(b) { if (b.name === name) b.status = status; });
-  renderBuildingNames();
+  requireReviewer(function() {
+    if (window.fbSaveBuildingName) {
+      window.fbSaveBuildingName(name, { status: status });
+    }
+    // Optimistic update
+    bnData.forEach(function(b) { if (b.name === name) b.status = status; });
+    renderBuildingNames();
+  });
 }
 
 // Keyboard: Escape exits map/freq/bn views

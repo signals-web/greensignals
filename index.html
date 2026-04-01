@@ -145,6 +145,13 @@
           <select id="bn-zone-filter" onchange="filterBuildingNames()">
             <option value="">All zones</option>
           </select>
+          <select id="bn-status-filter" onchange="filterBuildingNames()">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="flagged">Flagged</option>
+            <option value="deprecated">Deprecated</option>
+          </select>
         </div>
       </div>
       <div class="bn-summary" id="bn-summary"></div>
@@ -152,8 +159,9 @@
         <thead>
           <tr>
             <th class="bn-sortable" onclick="sortBNBy('name')">Building Name <span class="bn-sort-icon" id="bn-sort-name">↕</span></th>
+            <th>Short Name</th>
+            <th>Original Name</th>
             <th class="bn-sortable" onclick="sortBNBy('count')">Signs <span class="bn-sort-icon" id="bn-sort-count">↕</span></th>
-            <th>Zones</th>
             <th>Status</th>
             <th></th>
           </tr>
