@@ -633,6 +633,21 @@ function updateMap() {
     clipEl.appendChild(zoomWrap);
   }
 
+  // Nearby signs toggle button on map
+  var nearbyBtn = clipEl ? clipEl.querySelector('.nearby-toggle-btn') : null;
+  if (!nearbyBtn && clipEl) {
+    nearbyBtn = document.createElement('button');
+    nearbyBtn.className = 'nearby-toggle-btn';
+    nearbyBtn.textContent = 'Nearby';
+    nearbyBtn.onclick = function() { toggleNearbySheet(); };
+    clipEl.appendChild(nearbyBtn);
+  }
+  // Update active state
+  if (nearbyBtn) {
+    var sheet = document.getElementById('nearby-sheet');
+    nearbyBtn.classList.toggle('active', sheet && !sheet.classList.contains('hidden'));
+  }
+
   // Center on sign, zoom to fit destinations
   var zoom = 17;
   if (hasDests) {
@@ -711,7 +726,9 @@ function getCounts() {
 }
 
 // ── RENDER ──
-function render(){renderSidebar();renderMain();renderRightPanel();updateMap();saveSession();}
+function render(){renderSidebar();renderMain();renderRightPanel();updateMap();saveSession();
+  var ns=document.getElementById('nearby-sheet');if(ns&&!ns.classList.contains('hidden'))renderNearbySheet();
+}
 
 function renderSidebar(){
   const c=getCounts();
@@ -1400,35 +1417,47 @@ function getNearbySignData(currentSign) {
 }
 
 function renderRightPanel() {
+  restoreRPCollapsed();
+}
+
+// ── NEARBY SIGNS PULLOUT SHEET ──
+function toggleNearbySheet() {
+  var sheet = document.getElementById('nearby-sheet');
+  if (!sheet) return;
+  var isHidden = sheet.classList.contains('hidden');
+  sheet.classList.toggle('hidden');
+  // Update toggle button state
+  var btn = document.querySelector('.nearby-toggle-btn');
+  if (btn) btn.classList.toggle('active', isHidden);
+  if (isHidden) renderNearbySheet();
+}
+
+function renderNearbySheet() {
   var s = state.filtered[state.current];
   if (!s) return;
-
-  // Nearby signs — only those sharing destinations
   var nearby = getNearbySignData(s);
-  var nearbyHtml = '';
+  var html = '';
   if (nearby.length === 0) {
-    nearbyHtml = '<div class="rp-nearby-empty">No nearby signs share destinations</div>';
+    html = '<div class="ns-empty">No nearby signs share destinations</div>';
   } else {
     nearby.forEach(function(n) {
       var idx = state.filtered.indexOf(n.sign);
       var clickAttr = idx >= 0 ? ' onclick="goTo(' + idx + ')"' : '';
-      var sharedBadge = '<span class="rp-nearby-shared">' + n.sharedCount + ' shared</span>';
-      nearbyHtml += '<div class="rp-nearby-item"' + clickAttr + '>' +
-        '<span class="rp-nearby-icon">' + getTypeIcon(n.sign.type) + '</span>' +
-        '<span class="rp-nearby-dot dot-' + n.sign.status + '"></span>' +
-        '<span class="rp-nearby-id">' + escHtml(n.sign.id) + '</span>' +
+      var sharedBadge = '<span class="ns-shared">' + n.sharedCount + ' shared</span>';
+      html += '<div class="ns-item"' + clickAttr + '>' +
+        '<span class="ns-icon">' + getTypeIcon(n.sign.type) + '</span>' +
+        '<span class="status-dot dot-' + n.sign.status + '"></span>' +
+        '<span class="ns-id">' + escHtml(n.sign.id) + '</span>' +
         sharedBadge +
-        '<span class="rp-nearby-dist">' + n.distFt + ' ft</span>' +
+        '<span class="ns-dist">' + n.distFt + ' ft</span>' +
         '</div>';
     });
-    nearbyHtml += '<div class="rp-nearby-note">"Shared" = destinations in common with ' + escHtml(s.id) + '</div>';
+    html += '<div class="ns-note">"Shared" = destinations in common with ' + escHtml(s.id) + '</div>';
   }
-  var nearbyEl = document.getElementById('rp-nearby-body');
-  if (nearbyEl) nearbyEl.innerHTML = nearbyHtml;
-
-  // Restore collapsed states
-  restoreRPCollapsed();
+  var body = document.getElementById('nearby-sheet-body');
+  if (body) body.innerHTML = html;
 }
+
 
 function toggleRPSection(id) {
   var el = document.getElementById(id);
