@@ -179,6 +179,18 @@ html.light .side-col { background: rgba(0,0,0,.04); }
 .edit-input { background: var(--cu-mid); border: 1px solid var(--cu-border); color: var(--cu-white); font-family: var(--font-sans); font-size: 14px; padding: 7px 10px; border-radius: 4px; width: 100%; outline: none; }
 .edit-input:focus { border-color: var(--cu-gold); }
 .edit-input.ttd-input { font-family: var(--font-mono); font-size: 12px; width: 80px; }
+.combobox-wrap { position: relative; }
+.combobox-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: var(--cu-dark); border: 1px solid var(--cu-border); border-radius: 6px; margin-top: 4px; max-height: 220px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.combobox-dropdown::-webkit-scrollbar { width: 3px; }
+.combobox-dropdown::-webkit-scrollbar-thumb { background: var(--cu-border); border-radius: 2px; }
+.combobox-section { font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-border); padding: 8px 10px 4px; }
+.combobox-item { padding: 6px 10px; font-size: 13px; color: var(--cu-white); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .1s; }
+.combobox-item:hover { background: var(--cu-mid); }
+.combobox-zone { font-family: var(--font-mono); font-size: 10px; color: var(--cu-border); margin-left: auto; }
+.combobox-fav { font-size: 12px; color: var(--cu-border); cursor: pointer; flex-shrink: 0; width: 16px; text-align: center; }
+.combobox-fav.active { color: var(--cu-gold); }
+.combobox-fav:hover { color: var(--cu-gold); }
+.combobox-empty { padding: 10px; font-size: 12px; color: var(--cu-border); font-style: italic; }
 .remove-btn { background: transparent; border: none; color: var(--cu-border); font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; transition: color .15s; }
 .remove-btn:hover { color: var(--flag); }
 .add-dest-btn { background: transparent; border: none; color: var(--cu-gold); font-family: var(--font-mono); font-size: 12px; cursor: pointer; letter-spacing: .06em; text-transform: uppercase; padding: 0; }

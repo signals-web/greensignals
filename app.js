@@ -203,6 +203,127 @@ function splitSides(dests, facing) {
 const state = { signs:[], current:0, filtered:[], filter:'', statusFilter:'', showMine:false };
 let map=null, mapMarker=null, destMarkers=[];
 
+// ── BUILDINGS SERVICE (swap to Supabase later by editing this section) ──
+var _buildingsCache = null;
+var _buildingsFuse = null;
+
+function getBuildingsList() {
+  if (_buildingsCache) return Promise.resolve(_buildingsCache);
+  var apiKey = (window.__ENV__ && window.__ENV__.SHEETS_API_KEY) || '';
+  var sheetId = window.PROJECT ? window.PROJECT.sheetId : '';
+  if (!apiKey || !sheetId) return Promise.resolve([]);
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/DESTINATIONS!A1:J500?key=' + apiKey;
+  return fetch(url).then(function(r) { return r.json(); }).then(function(data) {
+    var rows = data.values || [];
+    if (rows.length < 2) return [];
+    _buildingsCache = rows.slice(1).map(function(r) {
+      return { id: r[0]||'', name: r[1]||'', category: r[2]||'', lat: r[3]||'', lng: r[4]||'', zone: r[5]||'', tier: r[6]||'' };
+    });
+    if (typeof Fuse !== 'undefined') {
+      _buildingsFuse = new Fuse(_buildingsCache, { keys: ['name', 'id', 'category'], threshold: 0.35, distance: 100 });
+    }
+    return _buildingsCache;
+  }).catch(function() { return []; });
+}
+
+function searchBuildings(query) {
+  if (!query || !_buildingsFuse) return (_buildingsCache || []).slice(0, 10);
+  return _buildingsFuse.search(query).slice(0, 10).map(function(r) { return r.item; });
+}
+
+function getBuildingRecents() {
+  try { return JSON.parse(localStorage.getItem('cub_dest_recents') || '[]'); } catch(e) { return []; }
+}
+function addBuildingRecent(name) {
+  var recents = getBuildingRecents().filter(function(r) { return r !== name; });
+  recents.unshift(name);
+  if (recents.length > 10) recents = recents.slice(0, 10);
+  localStorage.setItem('cub_dest_recents', JSON.stringify(recents));
+}
+function getBuildingFavorites() {
+  try { return JSON.parse(localStorage.getItem('cub_dest_favorites') || '[]'); } catch(e) { return []; }
+}
+function toggleBuildingFavorite(name) {
+  var favs = getBuildingFavorites();
+  var idx = favs.indexOf(name);
+  if (idx >= 0) favs.splice(idx, 1); else favs.push(name);
+  localStorage.setItem('cub_dest_favorites', JSON.stringify(favs));
+}
+
+// ── COMBOBOX ──
+var _activeCombobox = null;
+
+function openCombobox(inputEl, rowIdx) {
+  closeCombobox();
+  var wrap = inputEl.parentElement;
+  var dropdown = document.createElement('div');
+  dropdown.className = 'combobox-dropdown';
+  dropdown.id = 'combobox-dropdown';
+  wrap.style.position = 'relative';
+  wrap.appendChild(dropdown);
+  _activeCombobox = { input: inputEl, dropdown: dropdown, rowIdx: rowIdx };
+  updateComboboxResults(inputEl.value);
+}
+
+function closeCombobox() {
+  var dd = document.getElementById('combobox-dropdown');
+  if (dd) dd.remove();
+  _activeCombobox = null;
+}
+
+function updateComboboxResults(query) {
+  if (!_activeCombobox) return;
+  var dd = _activeCombobox.dropdown;
+  var rowIdx = _activeCombobox.rowIdx;
+  var favs = getBuildingFavorites();
+  var html = '';
+
+  if (!query) {
+    // Show favorites then recents
+    var favorites = favs.length ? favs : [];
+    var recents = getBuildingRecents();
+    if (favorites.length) {
+      html += '<div class="combobox-section">Favorites</div>';
+      favorites.forEach(function(name) {
+        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(name).replace(/'/g, "\\'") + '\')">' +
+          '<span class="combobox-fav active" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'\')">★</span>' +
+          escHtml(name) + '</div>';
+      });
+    }
+    if (recents.length) {
+      html += '<div class="combobox-section">Recent</div>';
+      recents.forEach(function(name) {
+        var isFav = favs.indexOf(name) >= 0;
+        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(name).replace(/'/g, "\\'") + '\')">' +
+          '<span class="combobox-fav' + (isFav ? ' active' : '') + '" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'\')">' + (isFav ? '★' : '☆') + '</span>' +
+          escHtml(name) + '</div>';
+      });
+    }
+    if (!html) html = '<div class="combobox-empty">Start typing to search buildings...</div>';
+  } else {
+    var results = searchBuildings(query);
+    if (results.length) {
+      results.forEach(function(b) {
+        var isFav = favs.indexOf(b.name) >= 0;
+        html += '<div class="combobox-item" onmousedown="selectCombobox(' + rowIdx + ',\'' + escHtml(b.name).replace(/'/g, "\\'") + '\')">' +
+          '<span class="combobox-fav' + (isFav ? ' active' : '') + '" onmousedown="event.stopPropagation();toggleBuildingFavorite(\'' + escHtml(b.name).replace(/'/g, "\\'") + '\');updateComboboxResults(\'' + escHtml(query).replace(/'/g, "\\'") + '\')">' + (isFav ? '★' : '☆') + '</span>' +
+          escHtml(b.name) + '<span class="combobox-zone">' + escHtml(b.zone) + '</span></div>';
+      });
+    } else {
+      html = '<div class="combobox-empty">No matches — type will be used as-is</div>';
+    }
+  }
+  dd.innerHTML = html;
+}
+
+function selectCombobox(rowIdx, name) {
+  updateDest(rowIdx, 'name', name);
+  addBuildingRecent(name);
+  closeCombobox();
+  // Re-render to update the input value
+  renderMain();
+}
+
 // ── CSV ──
 function parseCSV(text) {
   const lines = text.trim().split('\n').filter(l=>l.trim());
@@ -298,6 +419,7 @@ function loadData(text) {
   document.getElementById('load-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   setTimeout(initMap,300);
+  getBuildingsList(); // preload for typeahead
 }
 
 /**
@@ -318,6 +440,7 @@ function loadFromSheets(rows) {
   document.getElementById('load-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   setTimeout(initMap, 300);
+  getBuildingsList(); // preload for typeahead
 }
 
 // File input and drag/drop listeners are attached by config.js after injecting the load screen UI
@@ -583,7 +706,7 @@ function buildDestTable(dests, sign, editing, facingOffset) {
     if (editing) {
       html+=`<tr>
         <td>${arrowPickerHTML(d.deg,origIdx)}</td>
-        <td><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${origIdx},'name',this.value)"></td>
+        <td class="combobox-wrap"><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${origIdx},'name',this.value);updateComboboxResults(this.value)" onfocus="openCombobox(this,${origIdx})" onblur="setTimeout(closeCombobox,200)"></td>
         <td><input class="edit-input ttd-input" value="${escHtml(d.ttd)}" oninput="updateDest(${origIdx},'ttd',this.value)"></td>
         <td><button class="remove-btn" onclick="removeDest(${origIdx})">×</button></td>
       </tr>`;
