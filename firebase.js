@@ -156,55 +156,6 @@ function _initFirebase() {
       });
     };
 
-    // ── DIRECTION COMMENTS ──
-    let _dirCommentUnsub = null;
-
-    window.fbPostDirectionComment = function(signId, text, reviewer) {
-      const safeId = signId.replace(/[.#$/[\]]/g, '_');
-      const dirRef = ref(db, `projects/${projectPath}/directionComments/${safeId}`);
-      push(dirRef, {
-        text,
-        author: reviewer || 'Anonymous',
-        ts: serverTimestamp()
-      });
-    };
-
-    window.fbLogDirectionChange = function(signId, dir, reviewer) {
-      const safeId = signId.replace(/[.#$/[\]]/g, '_');
-      const dirRef = ref(db, `projects/${projectPath}/directionComments/${safeId}`);
-      push(dirRef, {
-        text: dir ? `Set facing to ${dir}` : 'Cleared facing direction',
-        author: reviewer || 'Admin',
-        ts: serverTimestamp(),
-        isSystem: true
-      });
-    };
-
-    window.loadDirectionComments = function(signId) {
-      const safeId = signId.replace(/[.#$/[\]]/g, '_');
-      const dirRef = ref(db, `projects/${projectPath}/directionComments/${safeId}`);
-      if (_dirCommentUnsub) { _dirCommentUnsub(); _dirCommentUnsub = null; }
-      _dirCommentUnsub = onValue(dirRef, (snapshot) => {
-        const data = snapshot.val();
-        const thread = document.getElementById('dir-comment-thread');
-        if (!thread) return;
-        if (!data) {
-          thread.innerHTML = '';
-          return;
-        }
-        const entries = Object.entries(data).filter(([,c]) => c.ts).sort((a, b) => a[1].ts - b[1].ts);
-        thread.innerHTML = entries.map(([, c]) => {
-          const sys = c.isSystem ? ' dir-system' : '';
-          return `<div class="dir-comment-item${sys}">
-            <strong>${_escComment(c.author)}</strong>
-            <span class="comment-time">${_timeAgo(c.ts)}</span>
-            <span class="dir-comment-text">${_escComment(c.text)}</span>
-          </div>`;
-        }).join('');
-        thread.scrollTop = thread.scrollHeight;
-      });
-    };
-
     function _escComment(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     window.firebaseReady = true;

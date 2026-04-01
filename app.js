@@ -835,8 +835,6 @@ function renderMain(){
               ${s._facing && window.IS_ADMIN ? '<button class="facing-btn facing-clear" onclick="setFacing(null)">&times;</button>' : ''}
             </div>
           </div>
-          <div class="dir-comment-thread" id="dir-comment-thread"></div>
-          ${!window.IS_ADMIN ? '<div class="direction-comment-input"><input class="edit-input" id="dir-comment-input" placeholder="Suggest a change or leave a note..." maxlength="300" onkeydown="if(event.key===\'Enter\')postDirectionComment()"><button class="comment-send-btn" onclick="postDirectionComment()">Post</button></div>' : ''}
         </div>
       </div>
       <div class="map-clip"><div id="sign-map"></div></div>
@@ -920,7 +918,7 @@ function renderMain(){
   setTimeout(initMap,200);
   // Load comments for this sign from Firebase
   if (typeof loadComments === 'function') loadComments(s.id);
-  if (typeof loadDirectionComments === 'function') loadDirectionComments(s.id);
+
 }
 
 var commentsOpen = false;
@@ -944,28 +942,10 @@ function postComment() {
   });
 }
 
-function postDirectionComment() {
-  var input = document.getElementById('dir-comment-input');
-  var text = input ? input.value.trim() : '';
-  if (!text) return;
-  var s = state.filtered[state.current];
-  requireReviewer(function() {
-    if (typeof fbPostDirectionComment === 'function') {
-      fbPostDirectionComment(s.id, text, getReviewer());
-      input.value = '';
-    }
-  });
-}
-
 // ── ACTIONS ──
 function setFacing(dir) {
   const s = state.filtered[state.current];
   s._facing = dir;
-
-  // Log direction change to Firebase
-  if (typeof fbLogDirectionChange === 'function') {
-    fbLogDirectionChange(s.id, dir, getReviewer());
-  }
 
   // Update facing buttons without full re-render
   var btns = document.querySelectorAll('.facing-btn');
