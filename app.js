@@ -710,7 +710,7 @@ function getCounts() {
 }
 
 // ── RENDER ──
-function render(){renderSidebar();renderMain();updateMap();saveSession();}
+function render(){renderSidebar();renderMain();renderRightPanel();updateMap();saveSession();}
 
 function renderSidebar(){
   const c=getCounts();
@@ -899,34 +899,11 @@ function renderMain(){
     :`<button class="action-btn btn-next" onclick="showSummary()">Review complete ✓</button>`;
   html+=`</div>`;
 
-  // ── COMMENT THREAD ──
-  html+=`<div class="comment-section">
-    <div class="comment-header" onclick="toggleComments()">
-      <span class="comment-header-label">Discussion</span>
-      <span class="comment-count" id="comment-count"></span>
-      <span class="comment-toggle" id="comment-toggle">▼</span>
-    </div>
-    <div class="comment-thread" id="comment-thread" style="display:none"></div>
-    <div class="comment-input-row" id="comment-input-row" style="display:none">
-      <input class="comment-input" id="comment-input" placeholder="Add a comment..." maxlength="500" onkeydown="if(event.key==='Enter')postComment()">
-      <button class="comment-send-btn" onclick="postComment()">Post</button>
-    </div>
-  </div>`;
-
   document.getElementById('sign-view').innerHTML=html;
   if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}
   setTimeout(initMap,200);
-  // Load comments for this sign from Firebase
+  // Load comments for this sign from Firebase (now in right panel)
   if (typeof loadComments === 'function') loadComments(s.id);
-
-}
-
-var commentsOpen = false;
-function toggleComments() {
-  commentsOpen = !commentsOpen;
-  document.getElementById('comment-thread').style.display = commentsOpen ? '' : 'none';
-  document.getElementById('comment-input-row').style.display = commentsOpen ? '' : 'none';
-  document.getElementById('comment-toggle').textContent = commentsOpen ? '▲' : '▼';
 }
 
 function postComment() {
@@ -1117,6 +1094,7 @@ function toggleMapView() {
   const overviewPanel = document.getElementById('map-overview');
   const btn = document.getElementById('map-toggle-btn');
 
+  var rp = document.getElementById('right-panel');
   if (mapViewActive) {
     // Close freq report if open
     if (freqViewActive) {
@@ -1127,12 +1105,14 @@ function toggleMapView() {
       freqBtn.style.color = '';
     }
     mainPanel.style.display = 'none';
+    if (rp) rp.style.display = 'none';
     overviewPanel.classList.add('visible');
     btn.style.borderColor = 'var(--cu-gold)';
     btn.style.color = 'var(--cu-gold)';
     initOverviewMap();
   } else {
     mainPanel.style.display = '';
+    if (rp) rp.style.display = '';
     overviewPanel.classList.remove('visible');
     btn.style.borderColor = '';
     btn.style.color = '';
@@ -1237,6 +1217,7 @@ function toggleFreqReport() {
   const freqBtn = document.getElementById('freq-toggle-btn');
   const mapBtn = document.getElementById('map-toggle-btn');
 
+  var rp = document.getElementById('right-panel');
   if (freqViewActive) {
     // Close map view if open
     if (mapViewActive) {
@@ -1246,6 +1227,7 @@ function toggleFreqReport() {
       mapBtn.style.color = '';
     }
     mainPanel.style.display = 'none';
+    if (rp) rp.style.display = 'none';
     freqPanel.classList.add('visible');
     freqBtn.style.borderColor = 'var(--cu-gold)';
     freqBtn.style.color = 'var(--cu-gold)';
@@ -1253,6 +1235,7 @@ function toggleFreqReport() {
     updateFreqReport();
   } else {
     mainPanel.style.display = '';
+    if (rp) rp.style.display = '';
     freqPanel.classList.remove('visible');
     freqBtn.style.borderColor = '';
     freqBtn.style.color = '';
@@ -1363,6 +1346,8 @@ function freqViewSigns(buildingName) {
   freqViewActive = false;
   document.getElementById('freq-report').classList.remove('visible');
   document.getElementById('main-panel').style.display = '';
+  var rp = document.getElementById('right-panel');
+  if (rp) rp.style.display = '';
   var btn = document.getElementById('freq-toggle-btn');
   btn.style.borderColor = '';
   btn.style.color = '';
@@ -1376,6 +1361,124 @@ function freqViewSigns(buildingName) {
 
   // Show a toast so the user knows what happened
   showSyncToast('Showing ' + state.filtered.length + ' signs with "' + buildingName + '"', 'success');
+}
+
+// ── RIGHT PANEL ──
+function haversine(lat1, lng1, lat2, lng2) {
+  var R = 20902231; // Earth radius in feet
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function getNearbySignData(currentSign) {
+  var MAX_DIST_FT = 400;
+  var currentDests = {};
+  currentSign.dests.forEach(function(d) {
+    if (d.name) currentDests[d.name.trim().toLowerCase()] = true;
+  });
+
+  return state.signs
+    .filter(function(s) { return s.id !== currentSign.id && s.lat && s.lng; })
+    .map(function(s) {
+      var dist = haversine(parseFloat(currentSign.lat), parseFloat(currentSign.lng), parseFloat(s.lat), parseFloat(s.lng));
+      var shared = 0;
+      s.dests.forEach(function(d) {
+        if (d.name && currentDests[d.name.trim().toLowerCase()]) shared++;
+      });
+      return { sign: s, distFt: Math.round(dist), sharedCount: shared };
+    })
+    .filter(function(n) { return n.distFt <= MAX_DIST_FT; })
+    .sort(function(a, b) { return b.sharedCount - a.sharedCount || a.distFt - b.distFt; })
+    .slice(0, 8);
+}
+
+function renderRightPanel() {
+  var s = state.filtered[state.current];
+  if (!s) return;
+
+  // Properties
+  var statusLabel = s.status.charAt(0).toUpperCase() + s.status.slice(1);
+  var statusBadge = '<span class="rp-status-badge rp-badge-' + s.status + '">' + statusLabel + '</span>';
+  var propsHtml =
+    '<div class="rp-prop"><span class="rp-prop-label">Status</span><span class="rp-prop-value">' + statusBadge + '</span></div>' +
+    '<div class="rp-prop"><span class="rp-prop-label">Type</span><span class="rp-prop-value">' + (TYPE_LABELS[s.type] || s.type) + '</span></div>' +
+    '<div class="rp-prop"><span class="rp-prop-label">Zone</span><span class="rp-prop-value">' + escHtml(s.nbhd) + '</span></div>' +
+    '<div class="rp-prop"><span class="rp-prop-label">Facing</span><span class="rp-prop-value">' + (s._facing || '—') + '</span></div>' +
+    '<div class="rp-prop"><span class="rp-prop-label">Reviewed by</span><span class="rp-prop-value">' + (s.reviewedBy ? escHtml(s.reviewedBy) : '—') + '</span></div>' +
+    '<div class="rp-prop"><span class="rp-prop-label">Destinations</span><span class="rp-prop-value">' + s.dests.length + '</span></div>';
+  var propsEl = document.getElementById('rp-properties-body');
+  if (propsEl) propsEl.innerHTML = propsHtml;
+
+  // Nearby signs
+  var nearby = getNearbySignData(s);
+  var nearbyHtml = '';
+  if (nearby.length === 0) {
+    nearbyHtml = '<div class="rp-nearby-empty">No signs within 400 ft</div>';
+  } else {
+    nearby.forEach(function(n) {
+      var idx = state.filtered.indexOf(n.sign);
+      var clickAttr = idx >= 0 ? ' onclick="goTo(' + idx + ')"' : '';
+      var sharedBadge = n.sharedCount > 0 ? '<span class="rp-nearby-shared">' + n.sharedCount + ' shared</span>' : '';
+      nearbyHtml += '<div class="rp-nearby-item"' + clickAttr + '>' +
+        '<span class="rp-nearby-icon">' + getTypeIcon(n.sign.type) + '</span>' +
+        '<span class="rp-nearby-id">' + escHtml(n.sign.id) + '</span>' +
+        sharedBadge +
+        '<span class="rp-nearby-dist">' + n.distFt + ' ft</span>' +
+        '</div>';
+    });
+    nearbyHtml += '<div class="rp-nearby-note">"Shared" = destinations in common with ' + escHtml(s.id) + '</div>';
+  }
+  var nearbyEl = document.getElementById('rp-nearby-body');
+  if (nearbyEl) nearbyEl.innerHTML = nearbyHtml;
+
+  // Restore collapsed states from localStorage
+  restoreRPCollapsed();
+}
+
+function toggleRPSection(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  // Persist
+  var key = 'rp_collapsed';
+  var stored = {};
+  try { stored = JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) {}
+  stored[id] = el.classList.contains('collapsed');
+  localStorage.setItem(key, JSON.stringify(stored));
+}
+
+function restoreRPCollapsed() {
+  try {
+    var stored = JSON.parse(localStorage.getItem('rp_collapsed') || '{}');
+    Object.keys(stored).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && stored[id]) el.classList.add('collapsed');
+      else if (el) el.classList.remove('collapsed');
+    });
+  } catch(e) {}
+}
+
+function toggleRightPanel() {
+  var app = document.getElementById('app');
+  app.classList.toggle('rp-collapsed');
+  var btn = document.getElementById('rp-expand-floating');
+  if (app.classList.contains('rp-collapsed')) {
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'rp-expand-floating';
+      btn.className = 'rp-expand-btn visible';
+      btn.textContent = '▶';
+      btn.title = 'Show right panel';
+      btn.onclick = toggleRightPanel;
+      document.body.appendChild(btn);
+    } else { btn.classList.add('visible'); }
+  } else {
+    if (btn) btn.classList.remove('visible');
+  }
 }
 
 // ── INIT ──
