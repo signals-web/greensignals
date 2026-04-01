@@ -1,0 +1,835 @@
+{
+  "19th Street Bridge": {
+    "originalName": "19th Street Bridge",
+    "shortName": "19th St Bridge",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "22nd Street Bridge": {
+    "originalName": "22nd Street Bridge",
+    "shortName": "22nd St Bridge",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Administrative and Research Center- East Campus": {
+    "originalName": "Administrative and Research Center- East Campus",
+    "shortName": "ARC East",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Aerospace Engineering Sciences": {
+    "originalName": "Aerospace Engineering Sciences",
+    "shortName": "Aerospace Engineering",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Andrews Hall": {
+    "originalName": "Andrews Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Arnett Hall": {
+    "originalName": "Arnett Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Arts and Sciences Office Building 1": {
+    "originalName": "Arts and Sciences Office Building 1",
+    "shortName": "A&S Office 1",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Athens Court": {
+    "originalName": "Athens Court",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Bear Creek Basketball": {
+    "originalName": "Bear Creek Basketball",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Bear Creek Volleyball": {
+    "originalName": "Bear Creek Volleyball",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Benson Earth Sciences Building": {
+    "originalName": "Benson Earth Sciences Building",
+    "shortName": "Benson Earth Sciences",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Bosque": {
+    "originalName": "Bosque",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Bryan Benjamin Sax Ski Team Buildng": {
+    "originalName": "Bryan Benjamin Sax Ski Team Buildng",
+    "shortName": "Sax Ski Team",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Buckingham Hall": {
+    "originalName": "Buckingham Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Buff Walk": {
+    "originalName": "Buff Walk",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Buffalo Statue": {
+    "originalName": "Buffalo Statue",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "CU Police": {
+    "originalName": "CU Police",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Center for Academic Success and Engagement": {
+    "originalName": "Center for Academic Success and Engagement",
+    "shortName": "CASE",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Center for Innovation and Creativity": {
+    "originalName": "Center for Innovation and Creativity",
+    "shortName": "CIC",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Center for Innovation and Creativity Pavilion": {
+    "originalName": "Center for Innovation and Creativity Pavilion",
+    "shortName": "CIC Pavilion",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Cockerell Hall": {
+    "originalName": "Cockerell Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Continuing Education Center": {
+    "originalName": "Continuing Education Center",
+    "shortName": "Continuing Ed",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Cristol Chemistry and Biochemistry Building": {
+    "originalName": "Cristol Chemistry and Biochemistry Building",
+    "shortName": "Cristol Chemistry",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Crosman Hall": {
+    "originalName": "Crosman Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Darley Towers North": {
+    "originalName": "Darley Towers North",
+    "shortName": "Darley North",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Darley Towers South": {
+    "originalName": "Darley Towers South",
+    "shortName": "Darley South",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Drescher Undrgrd Eng Int Teaching and Learning Lab": {
+    "originalName": "Drescher Undrgrd Eng Int Teaching and Learning Lab",
+    "shortName": "ITLL",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Duane Physics": {
+    "originalName": "Duane Physics",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Eaton Humanities Building": {
+    "originalName": "Eaton Humanities Building",
+    "shortName": "Eaton Humanities",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Economics Building": {
+    "originalName": "Economics Building",
+    "shortName": "Economics",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Ekeley Sciences Building": {
+    "originalName": "Ekeley Sciences Building",
+    "shortName": "Ekeley Sciences",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Engineering Center North Wing": {
+    "originalName": "Engineering Center North Wing",
+    "shortName": "Engineering North",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Environmental Design Building": {
+    "originalName": "Environmental Design Building",
+    "shortName": "Environmental Design",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Events Buffalo Patio": {
+    "originalName": "Events Buffalo Patio",
+    "shortName": "Buffalo Patio",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Faculty-Staff Court": {
+    "originalName": "Faculty-Staff Court",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Family Housing Basketball": {
+    "originalName": "Family Housing Basketball",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Family Housing Volleyball": {
+    "originalName": "Family Housing Volleyball",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Farrand Hall": {
+    "originalName": "Farrand Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Fiske Planetarium and Science Center": {
+    "originalName": "Fiske Planetarium and Science Center",
+    "shortName": "Fiske Planetarium",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Gallogly Discovery Learning Center": {
+    "originalName": "Gallogly Discovery Learning Center",
+    "shortName": "Gallogly",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Gold Biosciences Building": {
+    "originalName": "Gold Biosciences Building",
+    "shortName": "Gold Biosciences",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Grounds and Recycling Operations Center": {
+    "originalName": "Grounds and Recycling Operations Center",
+    "shortName": "Grounds & Recycling",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Guggenheim Geography Building": {
+    "originalName": "Guggenheim Geography Building",
+    "shortName": "Guggenheim Geography",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Hale Science Building": {
+    "originalName": "Hale Science Building",
+    "shortName": "Hale Science",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Hallett Hall": {
+    "originalName": "Hallett Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Hellems Arts and Sciences Building": {
+    "originalName": "Hellems Arts and Sciences Building",
+    "shortName": "Hellems",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Henderson Building (Museum)": {
+    "originalName": "Henderson Building (Museum)",
+    "shortName": "Henderson Museum",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Hillside": {
+    "originalName": "Hillside",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Housing System Service Center": {
+    "originalName": "Housing System Service Center",
+    "shortName": "Housing Services",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Imig Music Building": {
+    "originalName": "Imig Music Building",
+    "shortName": "Imig Music",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Institute for Behavioral Genetics": {
+    "originalName": "Institute for Behavioral Genetics",
+    "shortName": "Behavioral Genetics",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Irrigation Pond": {
+    "originalName": "Irrigation Pond",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Jennie Smoly Caruthers Biotechnology Building": {
+    "originalName": "Jennie Smoly Caruthers Biotechnology Building",
+    "shortName": "Caruthers Biotech",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Kittredge Central": {
+    "originalName": "Kittredge Central",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Kittredge Lawn": {
+    "originalName": "Kittredge Lawn",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Kittredge Multiuse Field": {
+    "originalName": "Kittredge Multiuse Field",
+    "shortName": "Kittredge Field",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Kittredge Ponds": {
+    "originalName": "Kittredge Ponds",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Kittredge Volleyball Courts": {
+    "originalName": "Kittredge Volleyball Courts",
+    "shortName": "Kittredge Volleyball",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Kittredge West Hall": {
+    "originalName": "Kittredge West Hall",
+    "shortName": "Kittredge West",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Koelbel Building - Leeds School of Business": {
+    "originalName": "Koelbel Building - Leeds School of Business",
+    "shortName": "Koelbel (Leeds)",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Koenig Alumni Center": {
+    "originalName": "Koenig Alumni Center",
+    "shortName": "Koenig Alumni",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Lasp Space Technology Research Center": {
+    "originalName": "Lasp Space Technology Research Center",
+    "shortName": "LASP",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Libby Hall": {
+    "originalName": "Libby Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Life Science Research Lab (Rl4)": {
+    "originalName": "Life Science Research Lab (Rl4)",
+    "shortName": "Life Science Lab (RL4)",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Limelight Conference Center and Hotel": {
+    "originalName": "Limelight Conference Center and Hotel",
+    "shortName": "Limelight",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Litman Research Lab (Rl1)": {
+    "originalName": "Litman Research Lab (Rl1)",
+    "shortName": "Litman Lab (RL1)",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Macky Auditorium": {
+    "originalName": "Macky Auditorium",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Marine Court": {
+    "originalName": "Marine Court",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Marine Street Science Center (Rl6)": {
+    "originalName": "Marine Street Science Center (Rl6)",
+    "shortName": "Marine St Science (RL6)",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Mathematics Building": {
+    "originalName": "Mathematics Building",
+    "shortName": "Mathematics",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Muenzinger Psychology and Nueroscience Building": {
+    "originalName": "Muenzinger Psychology and Nueroscience Building",
+    "shortName": "Muenzinger",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "NE Court": {
+    "originalName": "NE Court",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "NW Court": {
+    "originalName": "NW Court",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "New Physics Laboratory": {
+    "originalName": "New Physics Laboratory",
+    "shortName": "New Physics Lab",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Norlin Library": {
+    "originalName": "Norlin Library",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Nso Gong Building": {
+    "originalName": "Nso Gong Building",
+    "shortName": "NSO Gong",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Old Main": {
+    "originalName": "Old Main",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Page Foundation Center": {
+    "originalName": "Page Foundation Center",
+    "shortName": "Page Foundation",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Police and Parking Services Center": {
+    "originalName": "Police and Parking Services Center",
+    "shortName": "Police & Parking",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Porter Biosciences": {
+    "originalName": "Porter Biosciences",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Potts_Prentup Concessions Building": {
+    "originalName": "Potts/Prentup Concessions Building",
+    "shortName": "Potts/Prentup Concessions",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Prentup Field": {
+    "originalName": "Prentup Field",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Ramaley Biology Building": {
+    "originalName": "Ramaley Biology Building",
+    "shortName": "Ramaley Biology",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Rec Fields": {
+    "originalName": "Rec Fields",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Reed Hall": {
+    "originalName": "Reed Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Regent Administrative Center": {
+    "originalName": "Regent Administrative Center",
+    "shortName": "Regent Admin",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Regent Dr Autopark": {
+    "originalName": "Regent Dr Autopark",
+    "shortName": "Regent Autopark",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Research Lab No 2": {
+    "originalName": "Research Lab No 2",
+    "shortName": "Research Lab 2",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Research Park Lake 4": {
+    "originalName": "Research Park Lake 4",
+    "shortName": "Research Park Lake",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Richard Jessor Building": {
+    "originalName": "Richard Jessor Building",
+    "shortName": "Jessor",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Roser Atlas Center": {
+    "originalName": "Roser Atlas Center",
+    "shortName": "Roser ATLAS",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Smiley Court": {
+    "originalName": "Smiley Court",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Smith Hall": {
+    "originalName": "Smith Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Space Science Building": {
+    "originalName": "Space Science Building",
+    "shortName": "Space Science",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Stadium Building": {
+    "originalName": "Stadium Building",
+    "shortName": "Stadium",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Stadium Sky Box": {
+    "originalName": "Stadium Sky Box",
+    "shortName": "Stadium Skybox",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Stadium Ticket Building": {
+    "originalName": "Stadium Ticket Building",
+    "shortName": "Stadium Tickets",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Stearns Towers Center": {
+    "originalName": "Stearns Towers Center",
+    "shortName": "Stearns Towers",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Student Recreation Center": {
+    "originalName": "Student Recreation Center",
+    "shortName": "Student Rec",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Sustainabilty Energy and Environment Community": {
+    "originalName": "Sustainabilty Energy and Environment Community",
+    "shortName": "SEEC",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Transportation Center and Annex": {
+    "originalName": "Transportation Center and Annex",
+    "shortName": "Transportation",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Uchealth Champions Center": {
+    "originalName": "Uchealth Champions Center",
+    "shortName": "UCHealth Champions",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "University Administrative Center": {
+    "originalName": "University Administrative Center",
+    "shortName": "UAC",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "University Administrative Center Annex": {
+    "originalName": "University Administrative Center Annex",
+    "shortName": "UAC Annex",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "University Club": {
+    "originalName": "University Club",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "University Memorial Center": {
+    "originalName": "University Memorial Center",
+    "shortName": "UMC",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "University Residence": {
+    "originalName": "University Residence",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Varsity Bridge": {
+    "originalName": "Varsity Bridge",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Varsity Lake Quad": {
+    "originalName": "Varsity Lake Quad",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Visual Arts Complex": {
+    "originalName": "Visual Arts Complex",
+    "shortName": "Visual Arts",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Wardenburg Student Health Center": {
+    "originalName": "Wardenburg Student Health Center",
+    "shortName": "Wardenburg",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Weber Hall": {
+    "originalName": "Weber Hall",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Will Vill Volleyball": {
+    "originalName": "Will Vill Volleyball",
+    "shortName": "",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Williams Village Dining and Community Commons": {
+    "originalName": "Williams Village Dining and Community Commons",
+    "shortName": "WV Dining Commons",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Williams Village East": {
+    "originalName": "Williams Village East",
+    "shortName": "WV East",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Williams Village North": {
+    "originalName": "Williams Village North",
+    "shortName": "WV North",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Williams Village Recreation Center": {
+    "originalName": "Williams Village Recreation Center",
+    "shortName": "WV Rec",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Wolf Law Building": {
+    "originalName": "Wolf Law Building",
+    "shortName": "Wolf Law",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  },
+  "Woodbury Arts and Sciences Building": {
+    "originalName": "Woodbury Arts and Sciences Building",
+    "shortName": "Woodbury",
+    "status": "pending",
+    "updatedBy": "short-name-generator",
+    "updatedAt": 1775049921342
+  }
+}
