@@ -161,8 +161,9 @@ function splitSides(dests, facing) {
   if (facing) {
     // When facing is set, rotate arrow interpretation relative to facing direction
     var facingDeg = DIR_DEGS[facing]; // compass degrees the sign faces
-    dests.forEach(function(d) {
-      if (d.deg === null || d.deg === undefined) { front.push(d); return; }
+    dests.forEach(function(d, idx) {
+      var tagged = { ...d, _origIdx: idx };
+      if (d.deg === null || d.deg === undefined) { front.push(tagged); return; }
       // Screen degrees: 0=→, 90=↓, 180=←, 270=↑
       // Convert screen deg to compass bearing, then find angle relative to facing
       var compassBearing = (Number(d.deg) + 90) % 360;
@@ -171,28 +172,29 @@ function splitSides(dests, facing) {
       // Back: within ±67.5° of opposite (rel 112.5-247.5)
       // Side: 67.5-112.5 or 247.5-292.5
       if (rel <= 67.5 || rel >= 292.5) {
-        front.push(d);
+        front.push(tagged);
       } else if (rel >= 112.5 && rel <= 247.5) {
         // Reflect arrow for back side (rotate 180° in screen degrees)
-        back.push({ ...d, deg: (Number(d.deg) + 180) % 360 });
+        back.push({ ...tagged, deg: (Number(d.deg) + 180) % 360 });
       } else {
-        front.push(d);
-        back.push(d);
+        front.push(tagged);
+        back.push(tagged);
       }
     });
   } else {
     // Default: use fixed screen-degree sets
-    dests.forEach(function(d) {
+    dests.forEach(function(d, idx) {
+      var tagged = { ...d, _origIdx: idx };
       var deg = d.deg;
       if (deg === null || deg === undefined) {
-        front.push(d);
+        front.push(tagged);
       } else if (BACK_DEGS.has(Number(deg))) {
-        back.push({ ...d, deg: REFLECT_MAP[Number(deg)] });
+        back.push({ ...tagged, deg: REFLECT_MAP[Number(deg)] });
       } else if (SIDE_DEGS.has(Number(deg))) {
-        front.push(d);
-        back.push(d);
+        front.push(tagged);
+        back.push(tagged);
       } else {
-        front.push(d);
+        front.push(tagged);
       }
     });
   }
@@ -739,11 +741,13 @@ function buildDestTable(dests, sign, editing, facingOffset) {
     ${editing?'<th style="width:36px"></th>':''}
   </tr></thead><tbody>`;
   dests.forEach(function(d, i) {
-    // For editing mode, find original index in sign.dests
-    const origIdx = editing ? i : sign.dests.indexOf(d);
+    // For editing mode, use _origIdx from splitSides if available, else fall back to array index
+    const origIdx = editing ? (d._origIdx !== undefined ? d._origIdx : i) : sign.dests.indexOf(d);
     if (editing) {
+      // Use original arrow degree for the picker (not the reflected one from splitSides)
+      var pickerDeg = (d._origIdx !== undefined && sign.dests[d._origIdx]) ? sign.dests[d._origIdx].deg : d.deg;
       html+=`<tr>
-        <td>${arrowPickerHTML(d.deg,origIdx)}</td>
+        <td>${arrowPickerHTML(pickerDeg,origIdx)}</td>
         <td class="combobox-wrap"><input class="edit-input" value="${escHtml(d.name)}" oninput="updateDest(${origIdx},'name',this.value);updateComboboxResults(this.value)" onfocus="openCombobox(this,${origIdx})" onblur="setTimeout(closeCombobox,200)"></td>
         <td><input class="edit-input ttd-input" value="${escHtml(d.ttd)}" oninput="updateDest(${origIdx},'ttd',this.value)"></td>
         <td><button class="remove-btn" onclick="removeDest(${origIdx})">×</button></td>
@@ -773,7 +777,8 @@ function buildDestTable(dests, sign, editing, facingOffset) {
       html += `</tr>`;
     });
   }
-  if (editing) {
+  var isSplitEdit = editing && dests.length > 0 && dests[0]._origIdx !== undefined;
+  if (editing && !isSplitEdit) {
     html+=`<tr><td colspan="4" style="padding:10px 1.5rem"><button class="add-dest-btn" onclick="addDest()">+ add destination</button></td></tr>`;
   }
   if (dests.length === 0) {
@@ -839,9 +844,9 @@ function renderMain(){
       <div class="map-clip"><div id="sign-map"></div></div>
     </div>`;
 
-  // Double-sided logic: split destinations into front/back when not editing
-  const sides = !s.editing ? splitSides(s.dests, s._facing) : null;
-  const hasBackSide = sides && sides.back.length > 0;
+  // Double-sided logic: split destinations into front/back
+  const sides = splitSides(s.dests, s._facing);
+  const hasBackSide = sides.back.length > 0;
   const frontDir = s._facing || '';
   const backDir = s._facing ? OPPOSITE_DIR[s._facing] : '';
 
@@ -849,17 +854,19 @@ function renderMain(){
   // e.g. facing N (0°) = no change; facing E (90°) = east arrow becomes ↑
   var facingScreenOffset = s._facing ? DIR_DEGS[s._facing] : 0;
 
-  if(s.editing) {
-    html+=buildDestTable(s.dests, s, true);
-  } else if(hasBackSide) {
+  if(hasBackSide) {
     html+=`<div class="sides-row">`;
     html+=`<div class="side-col"><div class="side-label">Side A <span class="side-hint">front${frontDir ? ' · '+frontDir : ''}</span></div>`;
-    html+=buildDestTable(sides.front, s, false, facingScreenOffset);
+    html+=buildDestTable(sides.front, s, s.editing, facingScreenOffset);
+    if(s.editing) html+=`<button class="add-btn" onclick="addDestToSide('front')" style="margin:8px 1rem">+ Add destination</button>`;
     html+=`</div>`;
     html+=`<div class="side-col"><div class="side-label side-b">Side B <span class="side-hint">back${backDir ? ' · '+backDir : ''}</span></div>`;
-    html+=buildDestTable(sides.back, s, false, facingScreenOffset);
+    html+=buildDestTable(sides.back, s, s.editing, facingScreenOffset);
+    if(s.editing) html+=`<button class="add-btn" onclick="addDestToSide('back')" style="margin:8px 1rem">+ Add destination</button>`;
     html+=`</div>`;
     html+=`</div>`;
+  } else if(s.editing) {
+    html+=buildDestTable(s.dests, s, true);
   } else {
     html+=buildDestTable(s.dests, s, false, facingScreenOffset);
   }
@@ -1062,6 +1069,27 @@ function setArrow(i,deg){
 function updateNotes(val){state.filtered[state.current].notes=val;}
 function removeDest(i){state.filtered[state.current].dests.splice(i,1);renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
 function addDest(){state.filtered[state.current].dests.push({deg:null,name:'',ttd:''});renderMain();if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}setTimeout(initMap,50);}
+function addDestToSide(side){
+  var s = state.filtered[state.current];
+  var facing = s._facing;
+  // Set a default arrow direction based on which side
+  var deg = null;
+  if (facing) {
+    var facingDeg = DIR_DEGS[facing];
+    if (side === 'front') {
+      // Arrow pointing away from sign in facing direction
+      deg = (facingDeg + 360 - 90) % 360; // compass to screen degrees
+    } else {
+      // Arrow pointing away in opposite direction
+      var oppDeg = (facingDeg + 180) % 360;
+      deg = (oppDeg + 360 - 90) % 360;
+    }
+  }
+  s.dests.push({deg: deg, name:'', ttd:''});
+  renderMain();
+  if(map){map.remove();map=null;mapMarker=null;destMarkers=[];}
+  setTimeout(initMap,50);
+}
 function showSummary(){const c=getCounts();alert(`Review complete!\n\n✅ Approved: ${c.approved}\n✏️  Edited: ${c.edited}\n🚩 Flagged: ${c.flagged}\n⏳ Pending: ${c.pending}\n\nUse Export to download your review CSV.`);}
 
 /**
