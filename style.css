@@ -209,7 +209,8 @@ html.light .ns-item { border-bottom-color: rgba(0,0,0,.06); }
 
 html.light .right-panel { background: #F0EEE9; }
 html.light .rp-section-header:hover { background: rgba(0,0,0,.02); }
-html.light .map-back-btn { background: #fff; color: var(--cu-black); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+html.light .map-back-btn { background: var(--cu-black); color: #fff; border-color: var(--cu-black); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+html.light .map-back-btn:hover { background: var(--cu-gold); color: #fff; border-color: var(--cu-gold); }
 
 /* MAIN */
 .main-panel { overflow-y: auto; background: var(--cu-black); position: relative; }
@@ -533,7 +534,7 @@ html.light .map-stats { background: rgba(245,244,240,.95); }
 }
 .freq-view-btn:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
 
-html.light .freq-filters select { background: #fff; color: var(--cu-black); border-color: #d1d1d6; }
+html.light .freq-filters select { background: #fff; color: var(--cu-black); border-color: #999; }
 html.light .freq-table tbody tr:hover { background: rgba(0,0,0,.03); }
 html.light .freq-table tbody tr { border-bottom-color: rgba(0,0,0,.06); }
 html.light .freq-zone-pill { background: rgba(0,0,0,.05); }
@@ -592,8 +593,8 @@ html.light .freq-zone-pill { background: rgba(0,0,0,.05); }
 }
 .bn-approve-btn:hover { border-color: var(--approve); color: var(--approve); }
 .bn-flag-btn:hover { border-color: var(--flag); color: var(--flag); }
-html.light .bn-search { background: #fff; color: var(--cu-black); border-color: #d1d1d6; }
-html.light .bn-filters select { background: #fff; color: var(--cu-black); border-color: #d1d1d6; }
+html.light .bn-search { background: #fff; color: var(--cu-black); border-color: #999; }
+html.light .bn-filters select { background: #fff; color: var(--cu-black); border-color: #999; }
 html.light .bn-table tbody tr:hover { background: rgba(0,0,0,.03); }
 html.light .bn-table tbody tr { border-bottom-color: rgba(0,0,0,.06); }
 
