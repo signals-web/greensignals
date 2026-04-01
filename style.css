@@ -144,6 +144,33 @@ html.light .side-col { background: rgba(0,0,0,.04); }
 /* MAP DESTINATION LABELS */
 .map-dest-label { font-family: var(--font-mono); font-size: 9px; letter-spacing: .02em; color: var(--cu-white); white-space: nowrap; pointer-events: none; text-shadow: 0 0 3px var(--cu-dark), 0 0 6px var(--cu-dark), 0 1px 2px var(--cu-dark); }
 
+/* Nearby sign ghost markers */
+.nearby-sign-marker {
+  width: 18px; height: 18px; opacity: .35; cursor: pointer;
+  transition: opacity .15s; filter: grayscale(.5);
+}
+.nearby-sign-marker:hover { opacity: .8; filter: none; }
+.nearby-sign-marker.nearby-has-overlap { opacity: .55; filter: grayscale(.2); }
+.nearby-sign-marker.nearby-has-overlap:hover { opacity: 1; filter: none; }
+.nearby-sign-marker svg { width: 18px; height: 18px; }
+
+.nearby-sign-popup .maplibregl-popup-content {
+  background: var(--cu-dark); border: 1px solid var(--cu-border); border-radius: 6px;
+  padding: 0; box-shadow: 0 4px 16px rgba(0,0,0,.4); color: var(--cu-white);
+}
+.nearby-sign-popup .maplibregl-popup-tip { border-top-color: var(--cu-dark); }
+.nearby-popup { padding: 8px 10px; font-size: 11px; }
+.nearby-popup-id { font-family: var(--font-mono); font-size: 11px; font-weight: 500; margin-bottom: 4px; color: var(--cu-gold); }
+.nearby-popup-type { font-weight: 400; color: var(--cu-muted); font-size: 10px; }
+.nearby-dest { padding: 1px 0; color: var(--cu-muted); font-size: 11px; }
+.nearby-dest.nearby-shared { color: var(--flag); font-weight: 500; }
+.nearby-overlap-note { margin-top: 4px; font-family: var(--font-mono); font-size: 9px; color: var(--flag); letter-spacing: .04em; }
+
+html.light .nearby-sign-popup .maplibregl-popup-content { background: #fff; border-color: #d1d1d6; color: var(--cu-black); }
+html.light .nearby-sign-popup .maplibregl-popup-tip { border-top-color: #fff; }
+html.light .nearby-dest { color: #666; }
+html.light .nearby-dest.nearby-shared { color: #d32f2f; }
+
 .dest-table { width: 100%; border-collapse: collapse; }
 .dest-table th { font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--cu-muted); padding: 10px 1rem; text-align: left; border-bottom: 1px solid var(--cu-border); }
 .dest-table td { padding: 10px 1rem; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
@@ -232,6 +259,21 @@ html.light .side-col { background: rgba(0,0,0,.04); }
 .comment-input:focus { border-color: var(--flag); }
 .comment-send-btn { background: transparent; border: 1px solid rgba(255,69,58,.25); color: var(--flag); font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 7px 12px; border-radius: 4px; cursor: pointer; transition: all .15s; }
 .comment-send-btn:hover { border-color: var(--flag); background: rgba(255,69,58,.1); }
+
+/* Facing picker — locked state for non-admins */
+.facing-locked .facing-btn { opacity: .4; pointer-events: none; }
+.facing-locked .facing-btn.active { opacity: .7; }
+.facing-locked .facing-label { color: var(--cu-muted); }
+.direction-comment-input { display: flex; gap: 6px; margin-top: 8px; }
+.direction-comment-input .edit-input { flex: 1; font-size: 12px; padding: 6px 8px; }
+.dir-comment-thread { max-height: 120px; overflow-y: auto; margin-top: 6px; }
+.dir-comment-item { font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.06); line-height: 1.4; }
+.dir-comment-item strong { font-size: 11px; margin-right: 4px; }
+.dir-comment-item .comment-time { font-family: var(--font-mono); font-size: 9px; color: var(--cu-muted); margin-right: 6px; }
+.dir-comment-item .dir-comment-text { display: block; margin-top: 2px; color: var(--cu-white); }
+.dir-comment-item.dir-system { color: var(--cu-muted); font-style: italic; }
+.dir-comment-item.dir-system .dir-comment-text { color: var(--cu-muted); }
+html.light .dir-comment-item { border-bottom-color: rgba(0,0,0,.06); }
 
 .actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
 .action-btn { padding: 10px 20px; border-radius: 5px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all .15s; }
@@ -324,6 +366,62 @@ html.light .drop-zone { border-color: #D1CEC6; }
 html.light #load-screen { background: #F5F4F0; }
 html.light .map-legend { background: rgba(245,244,240,.95); }
 html.light .map-stats { background: rgba(245,244,240,.95); }
+
+/* BUILDING FREQUENCY REPORT */
+#freq-report { display: none; position: relative; overflow-y: auto; }
+#freq-report.visible { display: block; }
+.freq-report-inner { padding: 2rem; max-width: 900px; margin: 0 auto; }
+.freq-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+.freq-title { font-size: 20px; font-weight: 500; letter-spacing: -.02em; }
+.freq-filters { display: flex; gap: 8px; }
+.freq-filters select {
+  background: var(--cu-dark); border: 1px solid var(--cu-border); color: var(--cu-white);
+  font-family: var(--font-sans); font-size: 13px; padding: 6px 10px; border-radius: 4px; outline: none;
+}
+.freq-filters select:focus { border-color: var(--cu-gold); }
+.freq-summary { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.freq-stat {
+  font-family: var(--font-mono); font-size: 12px; color: var(--cu-muted);
+  padding: 4px 10px; border: 1px solid var(--cu-border); border-radius: 3px;
+}
+.freq-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.freq-table thead th {
+  text-align: left; padding: 8px 10px; font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--cu-muted);
+  border-bottom: 1px solid var(--cu-border); white-space: nowrap;
+}
+.freq-sortable { cursor: pointer; user-select: none; }
+.freq-sortable:hover { color: var(--cu-gold); }
+.freq-sort-icon { font-size: 10px; margin-left: 2px; }
+.freq-table tbody tr { border-bottom: 1px solid rgba(255,255,255,.04); transition: background .1s; }
+.freq-table tbody tr:hover { background: rgba(207,184,124,.04); }
+.freq-table tbody td { padding: 8px 10px; vertical-align: middle; }
+.freq-name { font-weight: 500; }
+.freq-count { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--cu-gold); }
+.freq-zone-pill {
+  display: inline-block; font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 6px; border-radius: 3px; margin: 1px 2px;
+  background: rgba(255,255,255,.06); color: var(--cu-muted);
+}
+.freq-type-pill {
+  display: inline-block; font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  padding: 2px 6px; border-radius: 3px; margin: 1px 2px;
+}
+.freq-type-n  { background: rgba(11,56,88,.3);  color: #5a9bc6; }
+.freq-type-sd { background: rgba(54,93,170,.2); color: #6b8fd4; }
+.freq-type-m  { background: rgba(232,195,101,.15); color: var(--cu-gold); }
+.freq-type-pm { background: rgba(6,112,174,.15); color: #0670ae; }
+.freq-view-btn {
+  background: transparent; border: 1px solid var(--cu-border); color: var(--cu-muted);
+  font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 3px;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.freq-view-btn:hover { border-color: var(--cu-gold); color: var(--cu-gold); }
+
+html.light .freq-filters select { background: #fff; color: var(--cu-black); border-color: #d1d1d6; }
+html.light .freq-table tbody tr:hover { background: rgba(0,0,0,.03); }
+html.light .freq-table tbody tr { border-bottom-color: rgba(0,0,0,.06); }
+html.light .freq-zone-pill { background: rgba(0,0,0,.05); }
 
 /* theme toggle button */
 .theme-toggle {
