@@ -687,18 +687,18 @@ function highlightDest(td) {
   if (entry.dot) {
     entry.dot.style.width = '10px';
     entry.dot.style.height = '10px';
-    entry.dot.style.background = 'var(--cu-gold)';
-    entry.dot.style.boxShadow = '0 0 6px rgba(207,184,124,.6)';
+    entry.dot.style.background = 'var(--flag)';
+    entry.dot.style.boxShadow = '0 0 6px rgba(255,69,58,.5)';
   }
   // Bold label
   if (entry.label) {
-    entry.label.style.color = 'var(--cu-gold)';
+    entry.label.style.color = 'var(--flag)';
     entry.label.style.fontWeight = '500';
     entry.label.style.fontSize = '11px';
   }
   // Brighten line
   if (entry.lineId && map.getLayer(entry.lineId)) {
-    map.setPaintProperty(entry.lineId, 'line-color', 'rgba(207,184,124,0.9)');
+    map.setPaintProperty(entry.lineId, 'line-color', 'rgba(255,69,58,0.8)');
     map.setPaintProperty(entry.lineId, 'line-width', 2.5);
   }
   // Highlight the row

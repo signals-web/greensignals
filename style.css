@@ -327,8 +327,8 @@ html.light .nearby-dest.nearby-shared { color: #d32f2f; }
 .arrow-display.no-arrow { font-size: 14px; color: var(--cu-border); font-family: var(--font-mono); }
 
 .dest-name-cell { font-size: 15px; cursor: default; transition: color .15s; }
-.dest-name-cell:hover { color: var(--cu-gold); }
-tr.dest-hover td { background: rgba(207,184,124,.08); }
+.dest-name-cell:hover { color: var(--flag); }
+tr.dest-hover td { background: rgba(255,69,58,.06); }
 .dest-name-cell.empty { color: var(--cu-border); font-style: italic; font-size: 14px; }
 .ttd-chip { font-family: var(--font-mono); font-size: 12px; color: var(--cu-muted); background: var(--cu-mid); padding: 3px 9px; border-radius: 3px; white-space: nowrap; }
 
