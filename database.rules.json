@@ -1,0 +1,76 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "projects": {
+      "$projectId": {
+        ".read": "$projectId.length > 0 && $projectId.length < 64",
+        ".write": false,
+
+        "activity": {
+          ".read": true,
+          ".write": true,
+          ".indexOn": ["ts"],
+          "$entryId": {
+            ".validate": "newData.hasChildren(['signId', 'action', 'reviewer', 'ts'])",
+            "signId":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128" },
+            "action":   { ".validate": "newData.isString() && newData.val().matches(/^(approved|flagged|edited|unflagged|unapproved|commented)$/)" },
+            "reviewer": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+            "ts":       { ".validate": "newData.val() === now || (newData.isNumber() && newData.val() <= now + 60000)" },
+            "$other":   { ".validate": false }
+          }
+        },
+
+        "signState": {
+          ".read": true,
+          ".write": true,
+          "$safeId": {
+            ".validate": "newData.hasChildren(['id', 'status', 'reviewedBy', 'updatedAt'])",
+            "id":         { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128" },
+            "status":     { ".validate": "newData.isString() && newData.val().length <= 32" },
+            "notes":      { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 4000)" },
+            "dests":      { ".validate": "!newData.exists() || newData.hasChildren() || newData.isString()" },
+            "reviewedBy": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+            "updatedAt":  { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "$other":     { ".validate": false }
+          }
+        },
+
+        "comments": {
+          ".read": true,
+          ".write": true,
+          "$signId": {
+            "$commentId": {
+              ".validate": "newData.hasChildren(['text', 'author', 'ts']) || (data.exists() && newData.hasChild('resolved'))",
+              "text":     { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000" },
+              "author":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+              "ts":       { ".validate": "newData.val() === now || (newData.isNumber() && newData.val() <= now + 60000)" },
+              "resolved": { ".validate": "newData.isBoolean()" },
+              "$other":   { ".validate": false }
+            }
+          }
+        },
+
+        "buildingNames": {
+          ".read": true,
+          ".write": true,
+          "$key": {
+            ".validate": "newData.hasChildren(['originalName', 'updatedBy', 'updatedAt'])",
+            "originalName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 256" },
+            "updatedBy":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+            "updatedAt":    { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "status":       { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 32)" },
+            "shortName":    { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 128)" },
+            "notes":        { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 2000)" },
+            "$other":       { ".validate": "newData.isString() && newData.val().length <= 256" }
+          }
+        },
+
+        "$otherSubtree": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
