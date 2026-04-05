@@ -173,3 +173,35 @@ form.sign-form .error {
   color: #f87171;
   font-size: 0.85rem;
 }
+/* Upstream link indicator — surfaces `solidTypeId` when this record was
+   seeded via a Solid → Signal handoff. Visually distinct from form fields
+   so users understand it's metadata about provenance, not an editable
+   value. Canonical data flow note lives in SignTypeEdit.tsx. */
+form.sign-form .upstream-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 0.35rem;
+  font-size: 0.72rem;
+  color: #9fb8ea;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  justify-self: start;
+  cursor: help;
+}
+form.sign-form .upstream-link__label {
+  font-weight: 500;
+}
+form.sign-form .upstream-link__id {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.72rem;
+  color: #e7e8ea;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  text-transform: none;
+  letter-spacing: normal;
+}

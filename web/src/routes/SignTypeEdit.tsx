@@ -159,6 +159,18 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
 
   return (
     <form className="sign-form" onSubmit={handleSubmit}>
+      {/* Upstream link indicator — set when this record was seeded via a
+          Solid → Signal handoff. The solidTypeId is the reference to the
+          authoritative parametric type in Solid; we surface it here so
+          users understand that form/dimensions are owned upstream and
+          shouldn't be freely edited here (Signal owns location + copy).
+          Canonical data flow: Solid → Signal → Surface. */}
+      {draft.solidTypeId && (
+        <div className="upstream-link" title="This sign type's form and dimensions are defined in Solid. Edit geometry there; use this form for category, copy, and messaging.">
+          <span className="upstream-link__label">Linked to Solid type</span>
+          <code className="upstream-link__id">{draft.solidTypeId}</code>
+        </div>
+      )}
       <div className="row">
         <label>
           Code
@@ -276,7 +288,11 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
             type="button"
             onClick={handleOpenInSolid}
             disabled={saving}
-            title="Open this sign type in Solid for a 3D preview"
+            title={
+              draft.solidTypeId
+                ? `Jump to the linked Solid type (${draft.solidTypeId}) for its parametric 3D model`
+                : 'Open this sign type in Solid for a 3D preview'
+            }
           >
             Open in Solid ↗
           </button>
