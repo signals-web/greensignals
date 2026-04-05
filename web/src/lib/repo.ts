@@ -1,16 +1,11 @@
 // Module-level singletons so every component that imports from here sees the
-// same store. When the real Firestore adapter ships, this is the only file
-// that needs to change — everything else codes against the `ProjectsRepo` /
-// `SignTypesRepo` interfaces.
+// same store. When a Firebase config is available (VITE_FIREBASE_CONFIG env
+// var), we use the real Firestore-backed repos. Otherwise we fall back to the
+// localStorage adapter for dev/demo — same interface either way, so consumer
+// code is unaware of which backend is active.
 //
-// Persistence: we use `createLocalStorageRepos` so projects and sign types
-// survive page reloads in dev/demo. It wraps the same validated in-memory
-// core but writes a JSON snapshot to localStorage after every mutation.
-// On construction it hydrates from that snapshot (Zod-revalidated, so a
-// schema-drifted blob fails loudly and drops bad records rather than
-// poisoning the app). Firestore is a drop-in swap behind the same
-// interface once auth lands — see `@sosisu/platform/firebase`'s
-// `createFirestoreRepos`.
+// To connect to the Firestore emulator during local dev, also set
+// VITE_FIREBASE_EMULATOR=true.
 //
 // We also bootstrap a single demo project on first load so the list view has
 // something to show before any CRUD happens. The bootstrap is idempotent: if
@@ -19,15 +14,52 @@
 
 import {
   createLocalStorageRepos,
+  createFirestoreRepos,
+  initSosisuFirebase,
+  connectEmulator,
   blankSosisuProject,
   blankSignType,
-  type InMemoryRepos,
+  type ProjectsRepo,
+  type SignTypesRepo,
   type SosisuProject,
 } from '../platform/index.ts';
 
-const repos: InMemoryRepos = createLocalStorageRepos({
-  storageKey: 'sosisu:signal:v1',
-});
+/** The repos interface exposed to the rest of the app. Consumers only need
+ *  `projects` and `signTypes` — the `reset()` method on InMemoryRepos and
+ *  Firestore-specific internals are not surfaced. */
+export interface AppRepos {
+  projects: ProjectsRepo;
+  signTypes: SignTypesRepo;
+}
+
+function buildRepos(): AppRepos {
+  const firebaseConfigRaw = import.meta.env.VITE_FIREBASE_CONFIG as
+    | string
+    | undefined;
+  if (firebaseConfigRaw) {
+    try {
+      const config = JSON.parse(firebaseConfigRaw) as Record<string, unknown>;
+      const { db } = initSosisuFirebase(config);
+      if (import.meta.env.VITE_FIREBASE_EMULATOR === 'true') {
+        connectEmulator(db);
+      }
+      // eslint-disable-next-line no-console
+      console.log('[repo] using Firestore-backed repos');
+      return createFirestoreRepos(db);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[repo] VITE_FIREBASE_CONFIG set but failed to initialise Firestore, falling back to localStorage:',
+        err,
+      );
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.log('[repo] using localStorage-backed repos');
+  return createLocalStorageRepos({ storageKey: 'sosisu:signal:v1' });
+}
+
+const repos: AppRepos = buildRepos();
 
 export const DEMO_OWNER = {
   uid: 'demo-user',
@@ -67,6 +99,6 @@ export function ensureDemoProject(): Promise<SosisuProject> {
   return bootstrapped;
 }
 
-export function getRepos(): InMemoryRepos {
+export function getRepos(): AppRepos {
   return repos;
 }

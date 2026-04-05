@@ -40,12 +40,16 @@ export type {
   ProjectsRepo,
   SignTypesRepo,
   InMemoryRepos,
+  FirestoreRepos,
 } from '@sosisu/platform/firebase';
 
 export {
   RepoError,
   createInMemoryRepos,
   createLocalStorageRepos,
+  createFirestoreRepos,
+  initSosisuFirebase,
+  connectEmulator,
 } from '@sosisu/platform/firebase';
 
 export type { AuthUser, AuthState, AuthClient } from '@sosisu/platform/auth';
