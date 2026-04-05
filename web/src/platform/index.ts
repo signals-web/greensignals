@@ -56,9 +56,11 @@ export type { HandoffPayload } from '@sosisu/platform/handoff';
 
 export {
   HANDOFF_QUERY_PARAM,
+  HANDOFF_FROM_SOLID_QUERY_PARAM,
   HandoffDecodeError,
   encodeSignTypeForHandoff,
   decodeSignTypeFromHandoff,
   buildHandoffUrl,
   readHandoffFromLocation,
+  readSolidHandoffFromLocation,
 } from '@sosisu/platform/handoff';
