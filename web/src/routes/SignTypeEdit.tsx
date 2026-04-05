@@ -125,7 +125,24 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
   }
 
   function handleOpenInSolid() {
-    openInTarget(SOLID_URL);
+    if (!draft || !signTypeId) return;
+    // Canonical "jump to existing type": when this record is already linked
+    // to a Solid type via solidTypeId, we don't want to rebuild a fresh
+    // handoff envelope (that would cause Solid to synthesize a throwaway
+    // single-type project and clobber the user's working project). Instead
+    // emit ?viewType=<id> so Solid's bootstrap can select the existing
+    // persisted type in place. If the record isn't linked yet, fall back
+    // to the legacy handoff-envelope path so first-time "Open in Solid"
+    // still works as a seed.
+    getRepos()
+      .signTypes.get(projectId, signTypeId)
+      .then((stored) => {
+        if (!stored) return;
+        const url = stored.solidTypeId
+          ? `${SOLID_URL}/?viewType=${encodeURIComponent(stored.solidTypeId)}`
+          : buildHandoffUrl(SOLID_URL, stored, projectId);
+        window.open(url, '_blank', 'noopener');
+      });
   }
 
   function openInTarget(targetOrigin: string) {
