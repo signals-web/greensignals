@@ -47,3 +47,14 @@ export { RepoError, createInMemoryRepos } from '@sosisu/platform/firebase';
 export type { AuthUser, AuthState, AuthClient } from '@sosisu/platform/auth';
 
 export { createMemoryAuthClient } from '@sosisu/platform/auth';
+
+export type { HandoffPayload } from '@sosisu/platform/handoff';
+
+export {
+  HANDOFF_QUERY_PARAM,
+  HandoffDecodeError,
+  encodeSignTypeForHandoff,
+  decodeSignTypeFromHandoff,
+  buildHandoffUrl,
+  readHandoffFromLocation,
+} from '@sosisu/platform/handoff';

@@ -2,12 +2,20 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { getRepos } from '../lib/repo.ts';
 import {
   blankSignType,
+  buildHandoffUrl,
   nextSignCode,
   parseSignType,
   type SignCategory,
   type MountType,
   type SignType,
 } from '../platform/index.ts';
+
+// Dev-time targets for the three apps. Override via Vite env (`VITE_SURFACE_URL`,
+// `VITE_SOLID_URL`) when running preview builds or pointing at a deployed
+// environment. Ports are pinned in each app's vite.config.ts.
+const SURFACE_URL =
+  (import.meta.env.VITE_SURFACE_URL as string | undefined) ??
+  'http://localhost:5174';
 
 interface Props {
   projectId: string;
@@ -107,6 +115,21 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
       setError(err instanceof Error ? err.message : String(err));
       setSaving(false);
     }
+  }
+
+  function handleOpenInSurface() {
+    if (!draft || !signTypeId) return;
+    // Only offer the handoff once the draft has been saved at least once —
+    // otherwise Surface would receive unsaved edits the user may intend to
+    // discard. We read the canonical stored record from the repo rather than
+    // the in-memory draft so the URL always reflects what was last persisted.
+    getRepos()
+      .signTypes.get(projectId, signTypeId)
+      .then((stored) => {
+        if (!stored) return;
+        const url = buildHandoffUrl(SURFACE_URL, stored, projectId);
+        window.open(url, '_blank', 'noopener');
+      });
   }
 
   async function handleArchive() {
@@ -224,6 +247,16 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
             disabled={saving}
           >
             Archive
+          </button>
+        )}
+        {signTypeId && (
+          <button
+            type="button"
+            onClick={handleOpenInSurface}
+            disabled={saving}
+            title="Open this sign type in Surface to lay out artwork"
+          >
+            Open in Surface ↗
           </button>
         )}
         <button type="submit" className="primary" disabled={saving}>
