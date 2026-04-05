@@ -10,6 +10,7 @@
 import {
   createInMemoryRepos,
   blankSosisuProject,
+  blankSignType,
   type InMemoryRepos,
   type SosisuProject,
 } from '../platform/index.ts';
@@ -34,7 +35,21 @@ export function ensureDemoProject(): Promise<SosisuProject> {
       const draft = blankSosisuProject(DEMO_OWNER);
       draft.name = 'Demo Project';
       draft.client = 'SOSISU Internal';
-      return repos.projects.save(draft);
+      const project = await repos.projects.save(draft);
+      // Seed a single sign type so the list view (and the Signal → Surface
+      // handoff) has something to demo on first load. The in-memory repo
+      // resets on page reload, so without this the user sees an empty list
+      // every time and has to manually create a sign before anything is
+      // testable.
+      const seed = blankSignType('D-01');
+      seed.name = 'Main entry — visitor directional';
+      seed.copy = [
+        { text: 'Visitor Parking', style: 'primary', alignment: 'center' },
+        { text: '← Lot A', style: 'secondary', alignment: 'center' },
+        { text: 'Lot B →', style: 'secondary', alignment: 'center' },
+      ];
+      await repos.signTypes.save(project.id, seed);
+      return project;
     })();
   }
   return bootstrapped;
