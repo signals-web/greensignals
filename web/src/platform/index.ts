@@ -42,7 +42,11 @@ export type {
   InMemoryRepos,
 } from '@sosisu/platform/firebase';
 
-export { RepoError, createInMemoryRepos } from '@sosisu/platform/firebase';
+export {
+  RepoError,
+  createInMemoryRepos,
+  createLocalStorageRepos,
+} from '@sosisu/platform/firebase';
 
 export type { AuthUser, AuthState, AuthClient } from '@sosisu/platform/auth';
 
