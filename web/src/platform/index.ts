@@ -52,9 +52,18 @@ export {
   connectEmulator,
 } from '@sosisu/platform/firebase';
 
-export type { AuthUser, AuthState, AuthClient } from '@sosisu/platform/auth';
+export type {
+  AuthUser,
+  AuthState,
+  AuthClient,
+  AuthErrorCode,
+} from '@sosisu/platform/auth';
 
-export { createMemoryAuthClient } from '@sosisu/platform/auth';
+export {
+  AuthError,
+  createMemoryAuthClient,
+  createFirebaseAuthClient,
+} from '@sosisu/platform/auth';
 
 export type { HandoffPayload } from '@sosisu/platform/handoff';
 
