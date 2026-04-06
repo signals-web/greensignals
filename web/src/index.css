@@ -205,3 +205,123 @@ form.sign-form .upstream-link__id {
   text-transform: none;
   letter-spacing: normal;
 }
+
+/* ── Copy / Messaging editor ── */
+.copy-editor {
+  border: 1px solid #25282c;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0;
+}
+.copy-editor legend {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8a8f96;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 0.4rem;
+}
+.copy-empty {
+  font-size: 0.8rem;
+  color: #5a5f66;
+  padding: 0.5rem 0;
+}
+.copy-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.copy-line__reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.copy-btn {
+  background: none;
+  border: none;
+  color: #5a5f66;
+  font-size: 0.75rem;
+  padding: 0 0.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.copy-btn:hover:not(:disabled) {
+  color: #e7e8ea;
+}
+.copy-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+.copy-btn--remove {
+  font-size: 1rem;
+  color: #f87171;
+  opacity: 0.5;
+}
+.copy-btn--remove:hover {
+  opacity: 1;
+}
+.copy-line__text {
+  flex: 1;
+  min-width: 0;
+}
+.copy-line__style {
+  width: 100px;
+}
+.copy-line__align {
+  width: 80px;
+}
+.copy-add {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #93c5fd;
+  background: none;
+  border: 1px dashed #3a3d42;
+  border-radius: 4px;
+  padding: 0.3rem 0.75rem;
+  width: 100%;
+}
+.copy-add:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: #93c5fd;
+}
+
+/* ── Materials (read-only display) ── */
+.materials-section {
+  border: 1px solid #25282c;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0;
+}
+.materials-section legend {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8a8f96;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 0.4rem;
+}
+.material-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+}
+.material-label {
+  font-weight: 500;
+  color: #b0b5bc;
+  min-width: 60px;
+}
+.material-spec {
+  color: #8a8f96;
+}
+
+/* ── Copy preview in list view ── */
+.copy-preview {
+  font-size: 0.75rem;
+  color: #6a6f76;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

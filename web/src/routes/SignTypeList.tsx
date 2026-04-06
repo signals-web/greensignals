@@ -77,6 +77,7 @@ export function SignTypeList({ projectId, onCreate, onEdit }: Props) {
             <tr>
               <th style={{ width: '7rem' }}>Code</th>
               <th>Name</th>
+              <th>Copy</th>
               <th style={{ width: '9rem' }}>Category</th>
               <th style={{ width: '9rem' }}>W × H (mm)</th>
               <th style={{ width: '8rem' }}>Updated</th>
@@ -91,6 +92,15 @@ export function SignTypeList({ projectId, onCreate, onEdit }: Props) {
               >
                 <td className="code">{t.code}</td>
                 <td>{t.name || <em style={{ color: '#8a8f96' }}>(unnamed)</em>}</td>
+                <td>
+                  {t.copy.length > 0 ? (
+                    <span className="copy-preview">
+                      {t.copy.map((l) => l.text).join(' · ')}
+                    </span>
+                  ) : (
+                    <em style={{ color: '#5a5f66', fontSize: '0.75rem' }}>—</em>
+                  )}
+                </td>
                 <td>{t.category}</td>
                 <td>
                   {formatDims(t.dimensionsMM.w, t.dimensionsMM.h, t.dimensionsMM.d)}

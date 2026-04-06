@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, useCallback, type FormEvent } from 'react';
 import { getRepos } from '../lib/repo.ts';
 import {
   blankSignType,
@@ -8,6 +8,7 @@ import {
   type SignCategory,
   type MountType,
   type SignType,
+  type LineSpec,
 } from '../platform/index.ts';
 
 // Dev-time targets for the three apps. Override via Vite env (`VITE_SURFACE_URL`,
@@ -85,6 +86,18 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
     };
   }, [projectId, signTypeId, repos]);
 
+  // All hooks must be above the early return to satisfy Rules of Hooks.
+  const moveCopyLine = useCallback((index: number, direction: -1 | 1) => {
+    setDraft((d) => {
+      if (!d) return d;
+      const target = index + direction;
+      if (target < 0 || target >= d.copy.length) return d;
+      const copy = [...d.copy];
+      [copy[index], copy[target]] = [copy[target]!, copy[index]!];
+      return { ...d, copy };
+    });
+  }, []);
+
   if (!draft) {
     return <div className="empty-state">Loading…</div>;
   }
@@ -97,6 +110,31 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
     setDraft((d) =>
       d ? { ...d, dimensionsMM: { ...d.dimensionsMM, ...update } } : d,
     );
+  }
+
+  // ── Copy line helpers ──
+
+  function patchCopyLine(index: number, update: Partial<LineSpec>) {
+    setDraft((d) => {
+      if (!d) return d;
+      const copy = [...d.copy];
+      copy[index] = { ...copy[index]!, ...update };
+      return { ...d, copy };
+    });
+  }
+
+  function addCopyLine() {
+    setDraft((d) => {
+      if (!d) return d;
+      return { ...d, copy: [...d.copy, { text: '', style: 'secondary' as const, alignment: 'left' as const }] };
+    });
+  }
+
+  function removeCopyLine(index: number) {
+    setDraft((d) => {
+      if (!d) return d;
+      return { ...d, copy: d.copy.filter((_, i) => i !== index) };
+    });
   }
 
   async function handleSubmit(ev: FormEvent<HTMLFormElement>) {
@@ -273,6 +311,96 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
           />
         </label>
       </div>
+
+      {/* ── Copy / Messaging ── */}
+      <fieldset className="copy-editor">
+        <legend>Copy / Messaging</legend>
+        {draft.copy.length === 0 && (
+          <div className="copy-empty">No copy lines yet. Add one below.</div>
+        )}
+        {draft.copy.map((line, i) => (
+          <div key={i} className="copy-line">
+            <div className="copy-line__reorder">
+              <button
+                type="button"
+                className="copy-btn"
+                disabled={i === 0}
+                onClick={() => moveCopyLine(i, -1)}
+                title="Move up"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                className="copy-btn"
+                disabled={i === draft.copy.length - 1}
+                onClick={() => moveCopyLine(i, 1)}
+                title="Move down"
+              >
+                ↓
+              </button>
+            </div>
+            <input
+              type="text"
+              className="copy-line__text"
+              value={line.text}
+              onChange={(e) => patchCopyLine(i, { text: e.target.value })}
+              placeholder="Sign copy text…"
+            />
+            <select
+              className="copy-line__style"
+              value={line.style ?? 'secondary'}
+              onChange={(e) =>
+                patchCopyLine(i, {
+                  style: e.target.value as LineSpec['style'],
+                })
+              }
+            >
+              <option value="primary">Primary</option>
+              <option value="secondary">Secondary</option>
+              <option value="caption">Caption</option>
+              <option value="ada">ADA</option>
+            </select>
+            <select
+              className="copy-line__align"
+              value={line.alignment ?? 'left'}
+              onChange={(e) =>
+                patchCopyLine(i, {
+                  alignment: e.target.value as LineSpec['alignment'],
+                })
+              }
+            >
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
+            <button
+              type="button"
+              className="copy-btn copy-btn--remove"
+              onClick={() => removeCopyLine(i)}
+              title="Remove line"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button type="button" className="copy-add" onClick={addCopyLine}>
+          + Add line
+        </button>
+      </fieldset>
+
+      {/* ── Materials ── */}
+      {draft.materials.length > 0 && (
+        <fieldset className="materials-section">
+          <legend>Materials</legend>
+          {draft.materials.map((mat) => (
+            <div key={mat.id} className="material-row">
+              <span className="material-label">{mat.label}</span>
+              <span className="material-spec">{mat.spec}</span>
+            </div>
+          ))}
+        </fieldset>
+      )}
 
       {error && <div className="error">{error}</div>}
 
