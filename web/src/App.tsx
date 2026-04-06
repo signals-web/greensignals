@@ -27,22 +27,51 @@ export function App() {
 
       // Canonical Solid → Signal handoff: Solid encodes a parametric SignType
       // into a `?fromSolid=` envelope and opens Signal in a new tab. We
-      // decode, persist a new program-level SignType record (its
-      // `solidTypeId` points back at the originating Solid type), strip the
-      // query param so a reload doesn't re-import, and drop the user
-      // straight into the edit form so they can fill in category / copy.
+      // decode, check for an existing record linked to the same Solid type,
+      // and either merge fresh dimensions into it or create a new record.
+      //
+      // Dedup: if a SignType with the same `solidTypeId` already exists, we
+      // update its geometry-related fields (dimensionsMM, mountType) from the
+      // incoming handoff but preserve Signal-owned fields (code, name,
+      // category, copy, materials) so the user's messaging edits survive.
+      // This means clicking "Open in Signal" from Solid after editing dims
+      // does the right thing — dimensions sync, copy stays.
+      //
       // Schema / envelope failures fall through to the normal list view —
       // a broken URL shouldn't lock the app.
       try {
         const handoff = readSolidHandoffFromLocation();
         if (handoff && handoff.ok) {
-          const { signType } = handoff.value;
-          await getRepos().signTypes.save(proj.id, signType);
+          const { signType: inbound } = handoff.value;
+          const repos = getRepos();
+
+          // Check for an existing record linked to this Solid type.
+          const existing = inbound.solidTypeId
+            ? await repos.signTypes.findBySolidTypeId(proj.id, inbound.solidTypeId)
+            : null;
+
+          let targetId: string;
+          if (existing) {
+            // Merge: update geometry from Solid, keep Signal-owned fields.
+            const merged = {
+              ...existing,
+              dimensionsMM: inbound.dimensionsMM,
+              mountType: inbound.mountType,
+              updatedAt: new Date().toISOString(),
+            };
+            await repos.signTypes.save(proj.id, merged);
+            targetId = existing.id;
+          } else {
+            // First handoff of this Solid type — save as new.
+            await repos.signTypes.save(proj.id, inbound);
+            targetId = inbound.id;
+          }
+
           const url = new URL(window.location.href);
           url.searchParams.delete(HANDOFF_FROM_SOLID_QUERY_PARAM);
           window.history.replaceState({}, '', url.toString());
           setProject(proj);
-          setRoute({ kind: 'edit', signTypeId: signType.id });
+          setRoute({ kind: 'edit', signTypeId: targetId });
           return;
         }
       } catch (err) {
