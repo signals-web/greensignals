@@ -17,12 +17,14 @@ import {
   createFirestoreRepos,
   initSosisuFirebase,
   connectEmulator,
-  blankSosisuProject,
-  blankSignType,
   type ProjectsRepo,
   type SignTypesRepo,
   type SosisuProject,
 } from '../platform/index.ts';
+import {
+  seedProject,
+  seedSignTypes,
+} from '@sosisu/platform/seed';
 
 /** The repos interface exposed to the rest of the app. Consumers only need
  *  `projects` and `signTypes` — the `reset()` method on InMemoryRepos and
@@ -69,30 +71,19 @@ export const DEMO_OWNER = {
 
 let bootstrapped: Promise<SosisuProject> | null = null;
 
-/** Idempotent: returns (and lazily creates) the single in-memory demo project
- *  Signal's CRUD hangs off. Every caller awaits the same promise. */
+/** Idempotent: returns (and lazily creates) the CU Boulder demo project.
+ *  On first boot, seeds the shared project + 4 sign types so all three
+ *  apps show the same data and cross-app handoff links resolve. After
+ *  that, the persisted snapshot takes over and the seed never runs again. */
 export function ensureDemoProject(): Promise<SosisuProject> {
   if (!bootstrapped) {
     bootstrapped = (async () => {
       const existing = await repos.projects.list(DEMO_OWNER.uid);
       if (existing.length > 0) return existing[0]!;
-      const draft = blankSosisuProject(DEMO_OWNER);
-      draft.name = 'Demo Project';
-      draft.client = 'SOSISU Internal';
-      const project = await repos.projects.save(draft);
-      // Seed a single sign type on the very first boot so the list view
-      // (and the Signal → Surface / → Solid handoffs) have something to
-      // demo out of the box. After that, the persisted snapshot takes over
-      // and the seed never runs again — `existing.length > 0` short-circuits
-      // above on subsequent reloads.
-      const seed = blankSignType('D-01');
-      seed.name = 'Main entry — visitor directional';
-      seed.copy = [
-        { text: 'Visitor Parking', style: 'primary', alignment: 'center' },
-        { text: '← Lot A', style: 'secondary', alignment: 'center' },
-        { text: 'Lot B →', style: 'secondary', alignment: 'center' },
-      ];
-      await repos.signTypes.save(project.id, seed);
+      const project = await repos.projects.save(seedProject);
+      for (const st of seedSignTypes) {
+        await repos.signTypes.save(project.id, st);
+      }
       return project;
     })();
   }
