@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { SignTypeList } from './routes/SignTypeList.tsx';
 import { SignTypeEdit } from './routes/SignTypeEdit.tsx';
 import { ensureDemoProject, getRepos } from './lib/repo.ts';
+import { useCurrentUser, getAuthClient } from './lib/auth.ts';
+import LoginScreen from '../../../platform/components/LoginScreen.tsx';
 import {
   HANDOFF_FROM_SOLID_QUERY_PARAM,
   readSolidHandoffFromLocation,
@@ -16,6 +18,7 @@ type Route =
   | { kind: 'edit'; signTypeId: string | null /* null = new */ };
 
 export function App() {
+  const auth = useCurrentUser();
   const [project, setProject] = useState<SosisuProject | null>(null);
   const [route, setRoute] = useState<Route>({ kind: 'list' });
 
@@ -86,6 +89,18 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  // Auth gate
+  if (auth.status === 'loading') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#111', color: '#888', fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
+        Loading...
+      </div>
+    );
+  }
+  if (auth.status === 'signed-out') {
+    return <LoginScreen authClient={getAuthClient()} product="signal" />;
+  }
 
   return (
     <div className="app-shell">
