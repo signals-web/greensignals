@@ -134,4 +134,8 @@ export {
   ALL_APPROVAL_STATES,
   ApprovalTransitions,
   isValidTransition,
+  // Stage 0.3 Commit 2 — short-name resolution
+  SHORTNAME_WIDTH_THRESHOLD_MM,
+  deriveUseShortNames,
+  resolveUseShortName,
 } from '@sosisu/platform/canonical';
