@@ -12,12 +12,15 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@iconify/react": "^6.0.2",
     "@sosisu/platform": "*",
+    "papaparse": "^5.5.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

@@ -3,15 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign Messaging Review — SIGNALS Studio</title>
+<title>Signal — Sign Messaging Review</title>
 <meta name="description" content="Review wayfinding sign messaging — approve, edit, and flag sign destinations.">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="../platform/styles/tokens.css">
+<link rel="stylesheet" href="../platform/styles/suite-nav.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- SOSISU Suite Navigation -->
+<nav class="sosisu-nav" role="navigation" aria-label="SOSISU product suite">
+  <a href="/" class="sosisu-nav__brand" aria-label="SOSISU">
+    <span class="sosisu-nav__brand-segment">SO</span>
+    <span class="sosisu-nav__brand-dot">·</span>
+    <span class="sosisu-nav__brand-segment">SI</span>
+    <span class="sosisu-nav__brand-dot">·</span>
+    <span class="sosisu-nav__brand-segment">SU</span>
+  </a>
+  <div class="sosisu-nav__products">
+    <a href="https://solid.sosisu.app" class="sosisu-nav__product" data-product="solid">
+      <span class="sosisu-nav__dot sosisu-nav__dot--solid"></span>Solid
+    </a>
+    <a href="https://signal.sosisu.app" class="sosisu-nav__product active" data-product="signal" data-active>
+      <span class="sosisu-nav__dot sosisu-nav__dot--signal"></span>Signal
+    </a>
+    <a href="https://surface.sosisu.app" class="sosisu-nav__product" data-product="surface">
+      <span class="sosisu-nav__dot sosisu-nav__dot--surface"></span>Surface
+    </a>
+  </div>
+  <div class="sosisu-nav__spacer"></div>
+  <div class="sosisu-nav__actions">
+    <span class="sosisu-nav__badge">Beta</span>
+  </div>
+</nav>
+
 <div id="load-screen">
-  <div class="load-logo"><span>SIGNALS</span> Studio</div>
+  <div class="load-logo"><span>Signal</span></div>
   <div class="load-title">Sign Messaging Review</div>
   <div class="load-subtitle">Loading project configuration…</div>
 </div>
@@ -223,7 +251,8 @@
 <script src="app.js"></script>
 <script src="env.js"></script>
 <script src="firebase.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Google Identity Services removed (2026-04-09) — Sheets integration disabled -->
+<!-- <script src="https://accounts.google.com/gsi/client" async defer></script> -->
 <script src="sheets.js"></script>
 
 </body>

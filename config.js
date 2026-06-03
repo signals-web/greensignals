@@ -1,4 +1,4 @@
-// ── greensignals · config.js ──
+// ── sosisu signal · config.js ──
 // Reads ?project= from URL, loads projects.json, sets global config + branding
 
 (async function() {
@@ -70,22 +70,13 @@
   if (screen) {
     const isAdmin = window.IS_ADMIN;
 
+    // Google Sheets connect button removed (2026-04-09) — data now flows through internal DB + CSV import
     const sheetsBtn = `
-      <button class="sheets-connect-btn" id="sheets-connect-btn" onclick="connectToSheets()">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M19.3 3H14V0L9 5l5 5V7h4.3c1 0 1.7.7 1.7 1.7v6.6c0 1-.7 1.7-1.7 1.7H4.7C3.7 17 3 16.3 3 15.3V8.7C3 7.7 3.7 7 4.7 7H7V3H4.7C1.6 3 0 4.7 0 7.7v8.6C0 19.3 1.6 21 4.7 21h14.6c3.1 0 4.7-1.7 4.7-4.7V7.7C24 4.7 22.4 3 19.3 3z" fill="currentColor"/>
-        </svg>
-        Connect to Google Sheets
-      </button>
-
-      <div class="load-divider">or load a CSV file</div>
-
       <div class="drop-zone" id="drop-zone">
         <input type="file" id="file-input" accept=".csv">
         <div class="drop-icon">↑</div>
         <div class="drop-label">
-          <strong>Drop CSV file here</strong><br>or click to browse<br>
-          <span style="font-size:12px;margin-top:4px;display:block">Google Sheets → File → Download → CSV</span>
+          <strong>Drop CSV file here</strong><br>or click to browse
         </div>
       </div>
       <div class="paste-toggle" onclick="togglePaste()">Or paste CSV data directly</div>
@@ -96,12 +87,12 @@
 
     const reviewerLoad = `
       <div class="load-subtitle" style="margin-bottom:1.5rem">Loading sign data...</div>
-      <div style="font-size:13px;color:var(--cu-muted)">Data is loaded automatically from the project database.<br>If this takes too long, contact your SIGNALS project manager.</div>`;
+      <div style="font-size:13px;color:var(--cu-muted)">Data is loaded automatically from the project database.<br>If this takes too long, contact your SOSISU project manager.</div>`;
 
     screen.innerHTML = `
       <div class="load-logo"><span>${config.brand}</span> · ${config.studio}</div>
       <div class="load-title">Sign Messaging Review</div>
-      <div class="load-subtitle">${isAdmin ? 'Connect to Google Sheets or load a CSV to begin' : 'Welcome, reviewer'}</div>
+      <div class="load-subtitle">${isAdmin ? 'Load a CSV file to begin' : 'Welcome, reviewer'}</div>
       ${isAdmin ? sheetsBtn : reviewerLoad}
     `;
 
@@ -137,11 +128,11 @@ function showProjectPicker() {
   if (!screen) return;
 
   screen.innerHTML = `
-    <div class="load-logo">SIGNALS Studio</div>
+    <div class="load-logo">Signal</div>
     <div class="load-title">Sign Messaging Review</div>
     <div class="load-subtitle">Use the project link provided by your team to get started.</div>
     <div style="margin-top:2rem;font-size:13px;color:var(--cu-muted)">
-      If you don't have a link, contact your SIGNALS project manager.
+      If you don't have a link, contact your SOSISU project manager.
     </div>
   `;
 }
@@ -152,11 +143,11 @@ function showProjectError(message) {
   if (!screen) return;
 
   screen.innerHTML = `
-    <div class="load-logo">SIGNALS Studio</div>
+    <div class="load-logo">Signal</div>
     <div class="load-title" style="color:#FF453A">Configuration Error</div>
     <div class="load-subtitle">${message}</div>
     <div style="margin-top:2rem;font-size:13px;color:var(--cu-muted)">
-      Please check your URL or contact your SIGNALS project manager.
+      Please check your URL or contact your SOSISU project manager.
     </div>
   `;
 }

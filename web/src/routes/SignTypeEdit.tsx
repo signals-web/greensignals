@@ -179,7 +179,7 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
         const url = stored.solidTypeId
           ? `${SOLID_URL}/?viewType=${encodeURIComponent(stored.solidTypeId)}`
           : buildHandoffUrl(SOLID_URL, stored, projectId);
-        window.open(url, '_blank', 'noopener');
+        window.open(url, 'sosisu-solid');
       });
   }
 
@@ -195,7 +195,7 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
       .then((stored) => {
         if (!stored) return;
         const url = buildHandoffUrl(targetOrigin, stored, projectId);
-        window.open(url, '_blank', 'noopener');
+        window.open(url, 'sosisu-surface');
       });
   }
 

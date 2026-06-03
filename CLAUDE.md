@@ -1,47 +1,43 @@
-# GreenSignals
+# SOSISU Signal
 
 ## Project overview
-Sign messaging review tool for university wayfinding projects (CU Boulder, Harvard). Built by SIGNALS Studio. Live at greensignals.vercel.app.
+Sign messaging review tool for university wayfinding projects (CU Boulder, Harvard). Part of the SOSISU platform (sosisu.app). Built by Send Out Signals.
 
 ## Stack
 - Vanilla JS — no framework, no bundler, no build step (except env.js injection)
 - HTML: index.html (shell), config.js, app.js, sheets.js, firebase.js, style.css
 - Maps: MapLibre GL JS + MapTiler tiles (streets-v2-light/dark)
-- Backend: Google Sheets (source of truth), Firebase Realtime DB (activity feed + comments)
+- Backend: Firebase RTDB (activity feed + comments), CSV import (sign data). Google Sheets integration deprecated 2026-04-09.
 - Deploy: Vercel, auto-deploys on push to main
-- Repo: signals-web/greensignals
 
 ## Architecture
 - Multi-project via projects.json — URL param `?project=cuboulder` selects config
-- Admin (`?admin=true`): Google OAuth, read/write to Sheets
-- Reviewer (no admin param): API key read-only from Sheets, no Google login needed
+- Admin (`?admin=true`): CSV upload, full edit capabilities
+- Reviewer (no admin param): data loaded from internal DB, read-only review
 - Secrets: Vercel env vars → build.sh generates env.js at deploy time (gitignored)
-- Required env vars: FIREBASE_*, MAPTILER_KEY, SHEETS_API_KEY
-- Session persistence: localStorage (convenience), Sheets is source of truth
+- Required env vars: FIREBASE_*, MAPTILER_KEY
+- Session persistence: localStorage + Firebase RTDB (source of truth)
 
 ## Key files
 - `app.js` — state, rendering, sign card, map, CSV parsing, all UI logic, comment UI
-- `sheets.js` — Google Sheets OAuth (admin) + public read (reviewer), sync functions
+- `sheets.js` — DEPRECATED: Google Sheets integration disabled (USE_LEGACY_SHEETS flag), provides no-op stubs
 - `config.js` — project picker, branding, admin/reviewer routing, load screen UI
 - `firebase.js` — Firebase RTDB for activity feed, reviewer identity, and per-sign comments
 - `style.css` — all styles, light/dark mode, responsive layout
-- `projects.json` — project configs (sheet IDs, branding, OAuth client IDs)
+- `projects.json` — project configs (branding, Firebase paths). Sheet IDs/OAuth moved to _deprecated_ keys.
 - `build.sh` — generates env.js from Vercel env vars at deploy time
 - `env.example.js` — template for local dev (copy to env.js, fill in values)
 
 ## GCP / API keys
-- API key for Sheets public read must be from the **greensignals** GCP project (greensignals-490611)
-- Do NOT use the cub-sign-review GCP project for API keys — it has a blocking issue
-- The Sheets API must be enabled in the same GCP project as the key
-- OAuth client ID (for admin) is in projects.json per-project
+- Google Sheets integration deprecated (2026-04-09). No Sheets API key needed.
+- Legacy sheet IDs preserved in projects.json under _deprecated_ keys for reference.
+- Firebase config is the only required external service config.
 
 ## Conventions
 - No frameworks or abstractions — keep it vanilla JS
 - CSS variables for theming (--cu-gold, --cu-dark, etc.)
 - Functions are plain, globally scoped — no modules
 - Commit style: `feat:`, `fix:`, lowercase, concise
-- Push to `claude/gracious-newton` branch, create PR, squash merge to main
-- Always rebase on origin/main before pushing to avoid merge conflicts
 
 ## Sign card UI rules
 - Arrows: 14px SVGs in 60px column, centered between edge and destination text
@@ -70,14 +66,17 @@ projects/{projectPath}/
 ```
 
 ## Auth flows
-- **Admin** (`?admin=true`): sees Google Sheets connect button + CSV upload, OAuth for read/write
-- **Reviewer** (default): auto-loads data via Sheets API key (no login), read-only from Sheets
+- **Admin** (`?admin=true`): sees CSV upload interface, full edit capabilities
+- **Reviewer** (default): data loaded from internal database, read-only review mode
 - Both paths require setting a reviewer name (stored in localStorage) before any action
-- Reviewer actions (approve, flag, edit) sync to Firebase in real-time for multi-user visibility
-- Admin actions additionally sync back to Google Sheets via OAuth
+- All actions (approve, flag, edit) sync to Firebase RTDB in real-time for multi-user visibility
 
-## Current state (2026-03-31)
+## Platform integration
+Signal is part of the SOSISU platform. Solid defines sign geometry and zones → Signal populates zones with scored content → Surface renders content as production artwork. Signal's approved destinations flow into Surface for sign face layout.
+
+## Current state (2026-04-09)
 - CU Boulder project active with 119 signs, 5 reviewers using it live
-- Comment system deployed and in use (Stacy, Richelle actively commenting)
+- Comment system deployed and in use
 - Harvard project configured but not yet active
 - Light/dark mode working with MapTiler tile style switching
+- Google Sheets integration fully deprecated — all data via internal DB + CSV import

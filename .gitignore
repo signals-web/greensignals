@@ -1,6 +1,8 @@
-# Secrets — never commit
-env.js
-
-# OS files
+# Editor / OS junk
 .DS_Store
-Thumbs.db
+
+# Secrets — never commit real env files anywhere in the repo.
+# `.env.example` placeholders stay committed.
+.env
+.env.*
+!.env.example

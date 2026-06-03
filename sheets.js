@@ -1,4 +1,39 @@
-// ── greensignals · sheets.js ──
+// ── sosisu signal · sheets.js ──
+// ╔═══════════════════════════════════════════════════════════════════════╗
+// ║  DEPRECATED — Google Sheets integration disabled (2026-04-09)       ║
+// ║  All data now flows through the internal database (Firestore +      ║
+// ║  Firebase RTDB) and CSV import. Google Sheets is no longer the      ║
+// ║  source of truth.                                                   ║
+// ║                                                                     ║
+// ║  Original sheet IDs (for reference):                                ║
+// ║    CU Boulder: 1tLK2OisrE9Oosc1yahWYr2-2WXo8WcwFnB9l5qP720g       ║
+// ║    Harvard:    1ncf70jlKg322Y6Fff57dnIqZCrBsiP2omkbM1lIMRnM         ║
+// ║  Original OAuth Client ID:                                          ║
+// ║    908727177384-m29s8j6518sicn8e7n6959sip7er93tf.apps.gusercontent   ║
+// ║                                                                     ║
+// ║  To re-enable Sheets, set USE_LEGACY_SHEETS = true below.           ║
+// ╚═══════════════════════════════════════════════════════════════════════╝
+
+const USE_LEGACY_SHEETS = false;
+
+if (!USE_LEGACY_SHEETS) {
+  // Provide no-op stubs so the rest of the app doesn't break
+  // when it calls functions that used to live in this file.
+  window.connectToSheets = function() {
+    console.warn('Google Sheets integration is disabled. Data is managed via CSV import and the internal database.');
+    if (typeof showSyncToast === 'function') {
+      showSyncToast('Sheets integration is disabled — use CSV import instead', 'error');
+    }
+  };
+  window.sheetsWriteBack = null; // syncToSheet() checks typeof === 'function'
+  window.fetchPublicSheetData = function() { return Promise.resolve(false); };
+
+  console.log('sheets.js: Google Sheets integration disabled (USE_LEGACY_SHEETS = false)');
+
+} else {
+
+// ── LEGACY CODE BELOW — only runs if USE_LEGACY_SHEETS = true ──
+
 // Google Sheets API integration via Google Identity Services (GIS) OAuth
 
 // ── CONFIG (loaded from window.PROJECT) ──
@@ -383,3 +418,5 @@ if (document.readyState === 'loading') {
 } else {
   setTimeout(_initSheetsWhenReady, 100);
 }
+
+} // end USE_LEGACY_SHEETS

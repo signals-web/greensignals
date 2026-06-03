@@ -1,13 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --cu-gold: #CFB87C; --cu-black: #1C1C1E; --cu-dark: #2C2C2E; --cu-mid: #3A3A3C;
-  --cu-border: #48484A; --cu-muted: #8E8E93; --cu-white: #FFFFFF;
-  --approve: #30D158; --approve-bg: #0A2E14;
-  --flag: #FF453A;    --flag-bg: #2E0A0A;
-  --edit: #FFD60A;    --edit-bg: #2E2800;
-  --font-sans: 'IBM Plex Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  /* Signal product accent — SOSISU blue family, replaces CU Boulder gold */
+  --product-accent:       var(--signal-accent);
+  --product-accent-hover: var(--signal-accent-hover);
+  --product-accent-dim:   var(--signal-accent-dim);
+  --product-accent-ink:   var(--signal-accent-ink);
+  --product-deep:         var(--signal-deep);
+  --product-dark:         var(--signal-dark);
+  --product-bright:       var(--signal-bright);
+
+  /* Legacy CU-Boulder-era aliases — remapped to SOSISU tokens.
+     All former uses of --cu-gold now resolve to Signal's blue mid-tone. */
+  --cu-gold:    var(--signal-accent);
+  --cu-black:   var(--sosisu-bg-black);
+  --cu-dark:    var(--sosisu-bg-dark);
+  --cu-mid:     var(--sosisu-bg-mid);
+  --cu-border:  var(--sosisu-border);
+  --cu-muted:   var(--sosisu-text-secondary);
+  --cu-white:   var(--sosisu-text-primary);
+  --approve:    var(--sosisu-success); --approve-bg: var(--sosisu-success-bg);
+  --flag:       var(--sosisu-danger);  --flag-bg:    var(--sosisu-danger-bg);
+  --edit:       var(--sosisu-warning); --edit-bg:    var(--sosisu-warning-bg);
+  --font-sans:  var(--sosisu-font-sans);
+  --font-mono:  var(--sosisu-font-mono);
 }
 html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); font-family: var(--font-sans); font-size: 16px; }
 
@@ -32,7 +48,7 @@ html, body { height: 100%; background: var(--cu-black); color: var(--cu-white); 
 .paste-btn { margin-top: 8px; width: 500px; padding: 11px; background: var(--cu-gold); color: var(--cu-black); border: none; border-radius: 6px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; }
 
 /* APP */
-#app { display: none; height: 100vh; }
+#app { display: none; height: calc(100vh - var(--sosisu-nav-height, 36px)); }
 #app.visible { display: grid; grid-template-columns: 240px 1fr 280px; }
 #app.visible.nearby-open { grid-template-columns: 240px 1fr 260px 280px; }
 
@@ -414,7 +430,7 @@ tr.dest-hover td { background: rgba(255,69,58,.06); }
 /* MAP OVERVIEW */
 #map-overview { display: none; position: relative; }
 #map-overview.visible { display: block; grid-column: 2 / -1; }
-#overview-map { width: 100%; height: calc(100vh - 56px); }
+#overview-map { width: 100%; height: calc(100vh - var(--sosisu-nav-height, 36px) - 56px); }
 .map-legend {
   position: absolute; bottom: 1.5rem; left: 1.5rem; z-index: 1000;
   background: rgba(28,28,30,.92); border: 1px solid var(--cu-border);

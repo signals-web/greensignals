@@ -108,6 +108,12 @@ export function parseBuildingsCsv(
       ? Number.parseInt(r.floor_count, 10)
       : undefined;
     const abbreviation = r.abbreviation || undefined;
+    // B1 Bug #4/#5 — capture the category column when present. Tufts'
+    // sheet carries `Category` (mapped to canonical `category`); it was
+    // previously dropped. We keep it so the buildings→destinations
+    // bridge can carry it onto the scored DestinationPlace. Empty /
+    // whitespace categories (39 of 155 Tufts rows) stay undefined.
+    const category = r.category || undefined;
 
     const building: Building = {
       id,
@@ -119,6 +125,7 @@ export function parseBuildingsCsv(
         ? { floorCount }
         : {}),
       ...(abbreviation ? { abbreviation } : {}),
+      ...(category ? { category } : {}),
     };
     buildings.push({ row: rowNum, building });
   });

@@ -1,8 +1,8 @@
-# CU Boulder Sign Messaging Review
+# SOSISU Signal — Wayfinding Content Management
 
-A web app for reviewing wayfinding sign messaging for the CU Boulder campus wayfinding project.
+A web app for reviewing wayfinding sign messaging for campus wayfinding projects.
 
-**Built by [SIGNALS Studio](https://sendoutsignals.com)**
+**Part of the [SOSISU](https://sosisu.app) platform** — Built by [Send Out Signals](https://sendoutsignals.com)
 
 ## Usage
 
@@ -40,7 +40,7 @@ To enable the Sheets integration:
 4. Configure **OAuth consent screen** → External → Add scope `spreadsheets`
 5. Create **OAuth 2.0 Client ID** (Web application) with origins:
    - `http://localhost`
-   - `https://greensignals.vercel.app`
+   - `https://signal.sosisu.app` (production)
 6. Copy the Client ID into `sheets.js` → `SHEETS_CLIENT_ID`
 
 ## Deploy

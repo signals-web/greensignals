@@ -17,21 +17,20 @@ import {
   createFirestoreRepos,
   initSosisuFirebase,
   connectEmulator,
+  blankSosisuProject,
   type ProjectsRepo,
   type SignTypesRepo,
+  type DestinationPlacesRepo,
   type SosisuProject,
 } from '../platform/index.ts';
-import {
-  seedProject,
-  seedSignTypes,
-} from '@sosisu/platform/seed';
 
 /** The repos interface exposed to the rest of the app. Consumers only need
- *  `projects` and `signTypes` — the `reset()` method on InMemoryRepos and
- *  Firestore-specific internals are not surfaced. */
+ *  `projects`, `signTypes`, and `destinationPlaces` — the `reset()` method
+ *  on InMemoryRepos and Firestore-specific internals are not surfaced. */
 export interface AppRepos {
   projects: ProjectsRepo;
   signTypes: SignTypesRepo;
+  destinationPlaces: DestinationPlacesRepo;
 }
 
 function buildRepos(): AppRepos {
@@ -71,23 +70,36 @@ export const DEMO_OWNER = {
 
 let bootstrapped: Promise<SosisuProject> | null = null;
 
-/** Idempotent: returns (and lazily creates) the CU Boulder demo project.
- *  On first boot, seeds the shared project + 4 sign types so all three
- *  apps show the same data and cross-app handoff links resolve. After
- *  that, the persisted snapshot takes over and the seed never runs again. */
+/** Idempotent: returns (and lazily creates) a blank project.
+ *  On first boot, creates an empty project — sign types arrive via
+ *  Solid handoff or manual creation. After that, the persisted
+ *  snapshot takes over. */
 export function ensureDemoProject(): Promise<SosisuProject> {
   if (!bootstrapped) {
     bootstrapped = (async () => {
       const existing = await repos.projects.list(DEMO_OWNER.uid);
       if (existing.length > 0) return existing[0]!;
-      const project = await repos.projects.save(seedProject);
-      for (const st of seedSignTypes) {
-        await repos.signTypes.save(project.id, st);
-      }
-      return project;
+      return repos.projects.save(blankSosisuProject(DEMO_OWNER));
     })();
   }
   return bootstrapped;
+}
+
+/** Update project-level metadata (name, client, projectNumber). Returns the
+ *  updated project, or null if no project is bootstrapped yet. Only owner/editor
+ *  roles should call this — the Firestore rules enforce it when using the real
+ *  backend; in localStorage mode there are no roles. */
+export async function updateProjectMeta(
+  updates: { name?: string; client?: string; projectNumber?: string },
+): Promise<SosisuProject | null> {
+  const proj = await ensureDemoProject();
+  const patched: SosisuProject = {
+    ...proj,
+    ...(updates.name !== undefined && { name: updates.name }),
+    ...(updates.client !== undefined && { client: updates.client }),
+    ...(updates.projectNumber !== undefined && { projectNumber: updates.projectNumber }),
+  };
+  return repos.projects.save(patched);
 }
 
 export function getRepos(): AppRepos {

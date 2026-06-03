@@ -10,10 +10,15 @@ import {
   createMemoryAuthClient,
   createFirebaseAuthClient,
   initSosisuFirebase,
+  findRole,
+  roleCan,
   type AuthClient,
   type AuthState,
+  type Capability,
+  type ProjectRole,
+  type SosisuProject,
 } from '../platform/index.ts';
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useMemo } from 'react';
 
 function buildAuthClient(): AuthClient {
   const firebaseConfigRaw = import.meta.env.VITE_FIREBASE_CONFIG as
@@ -71,4 +76,25 @@ export function useCurrentUser(): AuthState {
     // SSR fallback (not used, but required by the signature).
     () => authClient.getState(),
   );
+}
+
+/** Derived role + capability check for the current user in a project.
+ *  Returns `null` role if signed out or not a member. */
+export function useProjectRole(
+  project: Pick<SosisuProject, 'members'> | null | undefined,
+): {
+  role: ProjectRole | null;
+  can: (cap: Capability) => boolean;
+} {
+  const auth = useCurrentUser();
+  return useMemo(() => {
+    if (!project || auth.status !== 'signed-in') {
+      return { role: null, can: () => false };
+    }
+    const role = findRole(project, auth.user);
+    return {
+      role,
+      can: (cap: Capability) => role !== null && roleCan(role, cap),
+    };
+  }, [project, auth]);
 }

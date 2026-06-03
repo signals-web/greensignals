@@ -36,11 +36,13 @@ describe('parseBuildingsCsv — Tufts-shape CSV (no building_code)', () => {
     expect(result.buildings[0].building.lng).toBeCloseTo(-71.1186, 4);
   });
 
-  it('drops unknown columns silently (no error, no warning row)', () => {
+  it('captures category, ignores other unknown columns (Dest ID)', () => {
     // Tufts CSV columns post-header-aliasing leave `id` (from "Dest
-    // ID") and `category` (from "Category") as canonical keys with no
-    // Buildings home. They should be ignored, not surfaced as
-    // rejections.
+    // ID") and `category` (from "Category") as canonical keys. B1
+    // Bug #4/#5 — `category` is now captured onto the Building so the
+    // buildings→destinations bridge can carry it onto the scored
+    // DestinationPlace. `id` (Dest ID) still has no Buildings home (the
+    // Building id is generated from the building_code), so it's ignored.
     const rows = [
       {
         id: 'D-T-001',
@@ -53,10 +55,10 @@ describe('parseBuildingsCsv — Tufts-shape CSV (no building_code)', () => {
     const result = parseBuildingsCsv(rows);
     expect(result.buildings).toHaveLength(1);
     expect(result.rejected).toEqual([]);
-    // Category / Dest ID dropped — not on the Building record
-    expect(Object.keys(result.buildings[0].building)).not.toContain(
-      'category',
-    );
+    // Category now captured (B1 fix).
+    expect(result.buildings[0].building.category).toBe('Academic');
+    // Dest ID is not used as the Building id (auto-generated bldg-… id).
+    expect(result.buildings[0].building.id).not.toBe('D-T-001');
     expect(result.buildings[0].building).not.toHaveProperty('destId');
   });
 });

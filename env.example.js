@@ -1,10 +1,10 @@
-// ── greensignals · env.example.js ──
+// ── sosisu signal · env.example.js ──
 // Copy this file to env.js and fill in your Firebase credentials.
 // env.js is gitignored and will NOT be committed.
 
 window.__ENV__ = {
   MAPTILER_KEY: "REPLACE_WITH_MAPTILER_KEY",
-  SHEETS_API_KEY: "REPLACE_WITH_SHEETS_API_KEY",
+  // SHEETS_API_KEY removed (2026-04-09) — Google Sheets integration disabled, data flows through internal DB
   FIREBASE_CONFIG: {
     apiKey: "REPLACE_WITH_API_KEY",
     authDomain: "your-project.firebaseapp.com",

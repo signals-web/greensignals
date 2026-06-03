@@ -5,7 +5,7 @@
 cat > env.js << EOF
 window.__ENV__ = {
   MAPTILER_KEY: "${MAPTILER_KEY}",
-  SHEETS_API_KEY: "${SHEETS_API_KEY}",
+  // SHEETS_API_KEY removed — Google Sheets integration disabled (2026-04-09)
   FIREBASE_CONFIG: {
     apiKey: "${FIREBASE_API_KEY}",
     authDomain: "${FIREBASE_AUTH_DOMAIN}",

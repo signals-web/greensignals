@@ -1,4 +1,4 @@
-// ── greensignals · firebase.js ──
+// ── sosisu signal · firebase.js ──
 // Firebase Realtime Database: multi-user sync, activity feed, reviewer identity
 
 // ── FIREBASE CONFIG ──

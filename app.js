@@ -1,4 +1,4 @@
-// ── greensignals · app.js ──
+// ── sosisu signal · app.js ──
 // Core application state, CSV parsing, rendering, actions, maps
 
 // ── THEME ──
@@ -220,27 +220,32 @@ let map=null, mapMarker=null, destMarkers=[];
 var destMarkersByName = {}; // { 'building name': { dot, label, lineId } }
 var nearbyMarkersBySignId = {}; // { 'sign-id': element }
 
-// ── BUILDINGS SERVICE (swap to Supabase later by editing this section) ──
+// ── BUILDINGS SERVICE ──
+// Buildings data is now derived from loaded sign destinations (no external API call).
+// Previously fetched from Google Sheets DESTINATIONS tab via API key.
+// Original sheet IDs: CU Boulder 1tLK2OisrE9Oosc1yahWYr2-2WXo8WcwFnB9l5qP720g, Harvard 1ncf70jlKg322Y6Fff57dnIqZCrBsiP2omkbM1lIMRnM
 var _buildingsCache = null;
 var _buildingsFuse = null;
 
 function getBuildingsList() {
   if (_buildingsCache) return Promise.resolve(_buildingsCache);
-  var apiKey = (window.__ENV__ && window.__ENV__.SHEETS_API_KEY) || '';
-  var sheetId = window.PROJECT ? window.PROJECT.sheetId : '';
-  if (!apiKey || !sheetId) return Promise.resolve([]);
-  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/DESTINATIONS!A1:J500?key=' + apiKey;
-  return fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-    var rows = data.values || [];
-    if (rows.length < 2) return [];
-    _buildingsCache = rows.slice(1).map(function(r) {
-      return { id: r[0]||'', name: r[1]||'', category: r[2]||'', lat: r[3]||'', lng: r[4]||'', zone: r[5]||'', tier: r[6]||'' };
+
+  // Build buildings list from loaded sign data (destinations already in memory)
+  var buildings = {};
+  if (state.signs && state.signs.length) {
+    state.signs.forEach(function(sign) {
+      (sign.dests || []).forEach(function(d) {
+        if (d.name && !buildings[d.name]) {
+          buildings[d.name] = { id: d.name, name: d.name, category: '', lat: sign.lat || '', lng: sign.lng || '', zone: sign.nbhd || '', tier: '' };
+        }
+      });
     });
-    if (typeof Fuse !== 'undefined') {
-      _buildingsFuse = new Fuse(_buildingsCache, { keys: ['name', 'id', 'category'], threshold: 0.35, distance: 100 });
-    }
-    return _buildingsCache;
-  }).catch(function() { return []; });
+  }
+  _buildingsCache = Object.values(buildings);
+  if (typeof Fuse !== 'undefined') {
+    _buildingsFuse = new Fuse(_buildingsCache, { keys: ['name', 'id', 'category'], threshold: 0.35, distance: 100 });
+  }
+  return Promise.resolve(_buildingsCache);
 }
 
 function searchBuildings(query) {
