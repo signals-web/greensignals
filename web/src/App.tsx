@@ -30,6 +30,7 @@ import {
   HANDOFF_FROM_SOLID_QUERY_PARAM,
 } from './platform/index.ts';
 import { blankDestinationPlace, DEFAULT_SCORING_CONFIG } from './platform/index.ts';
+import { ensureDestinationPlace } from './lib/ensure-destination-place.ts';
 import type {
   SosisuProject,
   SignType,
@@ -433,6 +434,50 @@ export function App() {
       await getRepos().destinationPlaces.archive(project.id, destinationPlaceId);
     },
     [project],
+  );
+
+  // B4 — auto-create/link DestinationPlaces for destination names typed on a
+  // sign. Dedups case-insensitively against the live list AND within this
+  // batch, seeds new records with the sign's own coords (stub), persists the
+  // new ones, and returns the resolved places in input order so the caller
+  // can link each row by id.
+  const ensureDestinationPlacesForNames = useCallback(
+    async (
+      names: string[],
+      stub: { lat: number; lng: number },
+    ): Promise<DestinationPlace[]> => {
+      if (!project) return [];
+      const attribution =
+        reviewerName?.trim() ||
+        (auth.status === 'signed-in'
+          ? auth.user.displayName || auth.user.email || auth.user.uid
+          : 'demo');
+      let working = destinations;
+      const created: DestinationPlace[] = [];
+      const resolved: DestinationPlace[] = [];
+      for (const name of names) {
+        const { place, wasCreated } = ensureDestinationPlace({
+          name,
+          existingPlaces: working,
+          projectId: project.id,
+          stubLat: stub.lat,
+          stubLng: stub.lng,
+          createdBy: attribution,
+        });
+        if (wasCreated) {
+          created.push(place);
+          working = [...working, place];
+        }
+        resolved.push(place);
+      }
+      if (created.length > 0) {
+        await Promise.all(
+          created.map((d) => getRepos().destinationPlaces.save(project.id, d)),
+        );
+      }
+      return resolved;
+    },
+    [project, destinations, reviewerName, auth],
   );
 
   // ── Sign type update (Phase 5 — policy editing in TYPES admin) ─────
@@ -960,6 +1005,7 @@ export function App() {
                 onRequireReviewer={requireReviewer}
                 onDeleteInstance={handleDeleteInstance}
                 destinations={destinations}
+                onEnsureDestinationPlaces={ensureDestinationPlacesForNames}
                 onRegenerateOneSign={regenerateOneSign}
                 isDark={isDark}
               />

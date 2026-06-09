@@ -128,6 +128,11 @@ export function BuildingNames({
       list = list.filter((r) => r.dest.district === districtFilter);
     }
     return [...list].sort((a, b) => {
+      // B4 — auto-stubbed places (no real coords) sink to the bottom of the
+      // list regardless of the active sort, so they read as "needs work".
+      const aStub = a.dest.coordsStub ? 1 : 0;
+      const bStub = b.dest.coordsStub ? 1 : 0;
+      if (aStub !== bStub) return aStub - bStub;
       if (sortCol === 'name') {
         return sortAsc
           ? a.dest.name.localeCompare(b.dest.name)
@@ -313,7 +318,18 @@ export function BuildingNames({
                       }
                     />
                   </td>
-                  <td className="bn-name-cell">{dest.name}</td>
+                  <td className="bn-name-cell">
+                    {dest.name}
+                    {dest.coordsStub && (
+                      <span
+                        className="bn-needs-coords"
+                        style={{ fontSize: '0.78em', opacity: 0.6, fontStyle: 'italic', marginLeft: 6 }}
+                        title="Auto-created from a sign — coordinates are a placeholder. Add real coords from the Destinations panel."
+                      >
+                        (needs coords)
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <input
                       className="bn-inline-input bn-short"

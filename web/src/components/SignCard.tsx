@@ -73,6 +73,15 @@ interface Props {
    *  edit table and the Phase 3 suggestions panel. Archived records are
    *  filtered out inside those components. */
   destinations?: DestinationPlace[];
+  /** B4 — ensure DestinationPlace records exist for a batch of typed
+   *  destination names (case-insensitive dedup, stub coords from the sign),
+   *  persisting any new ones. Returns the resolved places in input order so
+   *  Save can link each unlinked row by id. Optional — when absent, typed
+   *  rows persist as free text (legacy behavior). */
+  onEnsureDestinationPlaces?: (
+    names: string[],
+    stub: { lat: number; lng: number },
+  ) => Promise<DestinationPlace[]>;
   /** Re-run the bulk schedule generator for a single sign with a
    *  given facing direction. Used by edit mode to live-preview the
    *  destination list as the reviewer cycles the facing dial. The
@@ -248,6 +257,7 @@ export function SignCard({
   onRequireReviewer,
   onDeleteInstance,
   destinations = [],
+  onEnsureDestinationPlaces,
   onRegenerateOneSign,
   isDark = true,
 }: Props) {
@@ -711,30 +721,53 @@ export function SignCard({
   const saveEdit = useCallback(async () => {
     const name = await requireReviewer();
     if (!name) return;
+
+    // B4 — ensure a DestinationPlace exists for every typed-but-unlinked
+    // destination so it routes through to Surface (and dedups by name).
+    // Stub coords come from the sign's own location; the reviewer refines
+    // them later from Building Names. No-ops if the host didn't wire the
+    // callback or the sign has no coords yet.
+    const linkByName = new Map<string, string>();
+    if (onEnsureDestinationPlaces && instance.lat != null && instance.lng != null) {
+      const unlinked = [
+        ...new Set(
+          editDests
+            .filter((d) => d.name.trim() && !d.destinationPlaceId)
+            .map((d) => d.name.trim()),
+        ),
+      ];
+      if (unlinked.length > 0) {
+        const places = await onEnsureDestinationPlaces(unlinked, {
+          lat: instance.lat,
+          lng: instance.lng,
+        });
+        unlinked.forEach((n, i) => {
+          if (places[i]) linkByName.set(n.toLowerCase(), places[i].id);
+        });
+      }
+    }
+    const linkId = (d: Destination): string | undefined =>
+      d.destinationPlaceId ?? linkByName.get(d.name.trim().toLowerCase());
+
     // Re-split using the current edit facing, then save as two sides
     const [front, back] = splitSides(editDests, editFacing);
+    const mapRow = (d: Destination) => {
+      const pid = linkId(d);
+      return {
+        arrow: d.arrow,
+        name: d.name,
+        walkTime: d.walkTime,
+        ...(pid && { destinationPlaceId: pid }),
+      };
+    };
     const newSides: SignSide[] = [
       {
         label: `${front.label} · ${front.compass}`,
-        destinations: front.destinations.map((d) => ({
-          arrow: d.arrow,
-          name: d.name,
-          walkTime: d.walkTime,
-          ...(d.destinationPlaceId && {
-            destinationPlaceId: d.destinationPlaceId,
-          }),
-        })),
+        destinations: front.destinations.map(mapRow),
       },
       {
         label: `${back.label} · ${back.compass}`,
-        destinations: back.destinations.map((d) => ({
-          arrow: d.arrow,
-          name: d.name,
-          walkTime: d.walkTime,
-          ...(d.destinationPlaceId && {
-            destinationPlaceId: d.destinationPlaceId,
-          }),
-        })),
+        destinations: back.destinations.map(mapRow),
       },
     ];
     updateInstance(instance.id, {
@@ -746,7 +779,7 @@ export function SignCard({
     });
     logActivity({ signId: instance.id, action: 'edited', reviewer: name });
     setEditing(false);
-  }, [instance.id, editDests, editNotes, editFacing, requireReviewer]);
+  }, [instance.id, instance.lat, instance.lng, editDests, editNotes, editFacing, requireReviewer, onEnsureDestinationPlaces]);
 
   // ── Edit helpers (flat array) ────────────────────────────────────
   // Any user-initiated field edit clears the row's `auto` flag — the
