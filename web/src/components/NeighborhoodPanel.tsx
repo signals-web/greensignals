@@ -87,6 +87,8 @@ export interface NeighborhoodPanelProps {
   destinations: ReadonlyArray<DestinationPlace>;
   /** Theme — drives the mini-map's tile style. */
   isDark?: boolean;
+  /** Phase I1 — selected basemap id (project.basemapId) for the mini-map. */
+  basemapId?: string;
 }
 
 // ─── Component ────────────────────────────────────────────────────────
@@ -97,6 +99,7 @@ export function NeighborhoodPanel({
   signTypes,
   destinations,
   isDark = true,
+  basemapId,
 }: NeighborhoodPanelProps) {
   const { nearbySigns, sharedDestinations } = analysis;
   const hasNeighbors = nearbySigns.length > 0;
@@ -157,6 +160,7 @@ export function NeighborhoodPanel({
             analysis={analysis}
             destinations={destinations}
             isDark={isDark}
+            basemapId={basemapId}
             connectorMode={connectorMode}
             highlightedDestId={highlightedDestId}
             highlightedSignId={highlightedSignId}
@@ -370,6 +374,7 @@ function NeighborhoodMap({
   analysis,
   destinations,
   isDark,
+  basemapId,
   connectorMode,
   highlightedDestId,
   highlightedSignId,
@@ -379,6 +384,7 @@ function NeighborhoodMap({
   destinations: ReadonlyArray<DestinationPlace>;
   connectorMode: ConnectorMode;
   isDark: boolean;
+  basemapId?: string;
   highlightedDestId: string | null;
   highlightedSignId: string | null;
 }) {
@@ -411,7 +417,7 @@ function NeighborhoodMap({
 
     const map = new maplibregl.Map({
       container,
-      style: getMapStyleUrl(isDark),
+      style: getMapStyleUrl(basemapId, { isDark }),
       center: [current.lng, current.lat],
       zoom: INSET_ZOOM,
       attributionControl: false,
@@ -539,8 +545,8 @@ function NeighborhoodMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setStyle(getMapStyleUrl(isDark));
-  }, [isDark]);
+    map.setStyle(getMapStyleUrl(basemapId, { isDark }));
+  }, [isDark, basemapId]);
 
   // ── Highlight wiring — connector lines + marker emphasis ─────────
   useEffect(() => {

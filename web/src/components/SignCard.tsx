@@ -93,9 +93,12 @@ interface Props {
   ) => SignInstance;
   /** Whether the app is in dark mode. Drives the inset map's tile
    *  style — light mode swaps to a light MapTiler variant via
-   *  `getMapStyleUrl(isDark)` and `map.setStyle()` so the inset
+   *  `getMapStyleUrl(basemapId, { isDark })` and `map.setStyle()` so the inset
    *  matches the surrounding UI rather than fighting it. */
   isDark?: boolean;
+  /** Phase I1 — selected basemap id from project.basemapId. Undefined →
+   *  the registry default (MapTiler Streets). Drives the inset map style. */
+  basemapId?: string;
 }
 
 function statusColor(s: ReviewStatus): string {
@@ -260,6 +263,7 @@ export function SignCard({
   onEnsureDestinationPlaces,
   onRegenerateOneSign,
   isDark = true,
+  basemapId,
 }: Props) {
   // Phase 5: per-sign-type capacity. `policy.capacityPerSide` replaces
   // the old project-wide `topNPerSide` knob. The capacity rendered
@@ -351,7 +355,7 @@ export function SignCard({
     // changes hot-swap via `map.setStyle` in the sibling effect
     // below — no need to rebuild the map (or include `isDark` in
     // this effect's dep list) on a theme toggle.
-    const styleUrl = getMapStyleUrl(isDark);
+    const styleUrl = getMapStyleUrl(basemapId, { isDark });
 
     // Heads-up rotation: the inset map's bearing rotates so the sign's
     // facing direction is at the top of the screen. MapLibre's bearing
@@ -556,8 +560,8 @@ export function SignCard({
   // overlays survive (HTML), and `applyMapLayers` re-runs via the
   // `style.load` listener registered in the map effect.
   useEffect(() => {
-    mlMapRef.current?.setStyle(getMapStyleUrl(isDark));
-  }, [isDark]);
+    mlMapRef.current?.setStyle(getMapStyleUrl(basemapId, { isDark }));
+  }, [isDark, basemapId]);
 
   // Inset map heads-up + line rotation — fires on facing dial click.
   // The map effect above intentionally omits `instance.facing` from
@@ -1305,6 +1309,7 @@ export function SignCard({
           signTypes={signTypes}
           destinations={destinations}
           isDark={isDark}
+          basemapId={basemapId}
         />
       </div>
 

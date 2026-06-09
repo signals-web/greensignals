@@ -30,6 +30,9 @@ interface Props {
   /** Exit placement mode. */
   onCancelPlace?: () => void;
   isDark?: boolean;
+  /** Phase I1 — selected basemap id from project.basemapId. Undefined →
+   *  the registry default (MapTiler Streets). */
+  basemapId?: string;
   /** ID of the currently selected sign instance (for highlighted links). */
   selectedSignId?: string | null;
   /** Destinations rendered as draggable markers on the map.
@@ -86,6 +89,7 @@ export function MapOverview({
   onPlaceSign,
   onCancelPlace,
   isDark = true,
+  basemapId,
   selectedSignId,
   destinations = [],
   placingDestination = false,
@@ -190,7 +194,7 @@ export function MapOverview({
     // map and SignCard's inset map agree on dark/light variants and
     // dev/prod base. Theme changes hot-swap via `map.setStyle` in the
     // sibling effect below — this URL is just the initial render.
-    const styleUrl = getMapStyleUrl(isDark);
+    const styleUrl = getMapStyleUrl(basemapId, { isDark });
 
     // Determine initial position: saved position > instance bounds > world view
     const saved = loadMapPos();
@@ -435,11 +439,11 @@ export function MapOverview({
       }
     };
     map.once('style.load', onStyleLoad);
-    map.setStyle(getMapStyleUrl(isDark));
+    map.setStyle(getMapStyleUrl(basemapId, { isDark }));
     return () => {
       map.off('style.load', onStyleLoad);
     };
-  }, [isDark, instances, destinations]);
+  }, [isDark, basemapId, instances, destinations]);
 
   // ── Destination markers — create / update / remove diff ─────────────────
   //

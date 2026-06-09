@@ -619,6 +619,23 @@ export function App() {
     setProject(updated);
   }, [project]);
 
+  // Phase I1 — persist the selected basemap onto the project. Undefined
+  // clears basemapId (→ registry default, MapTiler Streets).
+  const handleBasemapChange = useCallback(
+    async (basemapId: string | undefined) => {
+      if (!project) return;
+      const updated: SosisuProject = {
+        ...project,
+        ...(basemapId ? { basemapId } : {}),
+        updatedAt: new Date().toISOString(),
+      };
+      if (!basemapId) delete (updated as { basemapId?: string }).basemapId;
+      await getRepos().projects.save(updated);
+      setProject(updated);
+    },
+    [project],
+  );
+
   // ── Phase 4: bulk schedule generator + Resume review ─────────────────
   const handleGenerateSchedules = useCallback(
     async (config: ScoringConfig) => {
@@ -950,6 +967,7 @@ export function App() {
             }}
             generating={generating}
             onResetConfigToDefaults={handleResetScoringConfig}
+            onBasemapChange={handleBasemapChange}
           />
         ) : showBuildingNames ? (
           <BuildingNames
@@ -963,6 +981,7 @@ export function App() {
             instances={instances}
             signTypes={signTypesMap}
             isDark={isDark}
+            basemapId={project?.basemapId}
             onSelectSign={(id) => {
               setShowMapOverview(false);
               setPlacingTypeId(null);
@@ -1008,6 +1027,7 @@ export function App() {
                 onEnsureDestinationPlaces={ensureDestinationPlacesForNames}
                 onRegenerateOneSign={regenerateOneSign}
                 isDark={isDark}
+                basemapId={project?.basemapId}
               />
             ) : (
               <div className="empty-state">

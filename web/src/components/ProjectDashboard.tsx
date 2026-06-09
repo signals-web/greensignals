@@ -27,6 +27,7 @@ import {
   type SosisuProject,
 } from '../platform/index.ts';
 import { MapOverview } from './MapOverview.tsx';
+import { BasemapPicker } from './BasemapPicker.tsx';
 
 interface Props {
   project: SosisuProject;
@@ -45,6 +46,9 @@ interface Props {
    *  scoringConfig was stored. Wired to the "Reset to defaults" affordance
    *  in the Advanced settings panel. */
   onResetConfigToDefaults?: () => Promise<void> | void;
+  /** Phase I1 — persist the selected basemap onto project.basemapId.
+   *  Undefined clears it (→ registry default). */
+  onBasemapChange?: (basemapId: string | undefined) => Promise<void> | void;
 }
 
 /** Sanitise a stored scoringConfig: fall back to default values when
@@ -131,6 +135,7 @@ export function ProjectDashboard({
   onSelectSign,
   generating = false,
   onResetConfigToDefaults,
+  onBasemapChange,
 }: Props) {
   // Local config edits live in component state until the user hits
   // "Generate schedules". The committed config is on the project,
@@ -459,6 +464,12 @@ export function ProjectDashboard({
                 </button>
               </div>
             </div>
+            <BasemapPicker
+              value={project.basemapId}
+              onChange={(id) => {
+                void onBasemapChange?.(id);
+              }}
+            />
           </div>
         )}
       </div>

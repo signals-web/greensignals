@@ -1,40 +1,48 @@
-// ─── MapTiler style URL helper — Phase 5c follow-up ──────────────────────
+// ─── Active-basemap resolver — Phase I1 ──────────────────────────────────────
 //
-// Centralizes the MapTiler tile-style URL for every map in the app
-// (SignCard's inset, MapOverview's campus view). Returns the dark
-// variant in dark mode and a light variant in light mode so the map
-// tiles match the surrounding UI theme rather than fighting it.
-//
-// The dev-vs-prod base toggle stays here too: in dev we route through
-// Vite's `/maptiler` proxy to avoid CORS on localhost; in prod we hit
-// `https://api.maptiler.com` directly. The map components only need
-// to know `isDark`; they don't need to know about either choice.
-//
-// Both URL flavours share the same MapTiler API key — pulled from
-// `VITE_MAPTILER_KEY`. When the key isn't set, the URL still
-// constructs (with `key=` empty) so the caller's downstream error
-// path matches the previous behaviour.
+// The single style-URL seam for every map in Signal v2 (SignCard's inset,
+// MapOverview's campus view). Pre-I1 this hardcoded a MapTiler Streets URL;
+// I1 resolves the active basemap through the provider registry, keyed off
+// the per-project `Project.basemapId`. Undefined basemapId → DEFAULT_BASEMAP_ID
+// (MapTiler Streets, dark/light auto-switch) so pre-I1 projects render
+// identically.
 
-const DARK_STYLE = 'streets-v2-dark';
-const LIGHT_STYLE = 'streets-v2-light';
+import {
+  getBasemapById,
+  DEFAULT_BASEMAP_ID,
+  PROVIDERS,
+  type BasemapEntry,
+} from './basemap-registry.ts';
 
-/** Construct the full MapTiler style.json URL for the current theme.
- *  Both maps in the app route through this helper so the URL shape
- *  (proxy vs direct, dark vs light, key) is defined once. */
-export function getMapStyleUrl(isDark: boolean): string {
-  const key =
-    (import.meta.env.VITE_MAPTILER_KEY as string | undefined) ?? '';
-  const style = isDark ? DARK_STYLE : LIGHT_STYLE;
-  // Vite dev proxies /maptiler → api.maptiler.com to dodge CORS on
-  // localhost. Production hits MapTiler directly.
-  const base = import.meta.env.DEV ? '/maptiler' : 'https://api.maptiler.com';
-  return `${base}/maps/${style}/style.json?key=${key}`;
+/** Resolve the active basemap. `project.basemapId` wins when set AND it
+ *  references a known catalog entry whose provider is configured; otherwise
+ *  the default (MapTiler Streets). */
+export function resolveActiveBasemap(
+  projectBasemapId: string | undefined,
+): BasemapEntry {
+  const fallback = getBasemapById(DEFAULT_BASEMAP_ID)!;
+  if (!projectBasemapId) return fallback;
+  const entry = getBasemapById(projectBasemapId);
+  if (!entry) return fallback;
+  if (!PROVIDERS[entry.providerId].isConfigured()) return fallback;
+  return entry;
 }
 
-/** Exported for tests + the dashboard's read-only style-name display
- *  if it ever wants to surface "currently rendering streets-v2-dark"
- *  as an admin diagnostic. */
-export const STYLE_NAMES = {
-  dark: DARK_STYLE,
-  light: LIGHT_STYLE,
-} as const;
+/** Render the MapLibre-compatible style URL for the active basemap.
+ *  Replaces the legacy `getMapStyleUrl(isDark)` entry point — callers now
+ *  pass the project's basemapId. */
+export function getMapStyleUrl(
+  projectBasemapId: string | undefined,
+  opts: { isDark: boolean },
+): string {
+  const entry = resolveActiveBasemap(projectBasemapId);
+  return PROVIDERS[entry.providerId].buildStyleUrl(entry, opts);
+}
+
+// Derived from the catalog's default entry — preserved for callers/tests
+// that inspect the legacy MapTiler style names as an admin diagnostic.
+const defaultEntry = getBasemapById(DEFAULT_BASEMAP_ID)!;
+export const STYLE_NAMES: { dark: string; light: string } =
+  typeof defaultEntry.styleCode === 'string'
+    ? { dark: defaultEntry.styleCode, light: defaultEntry.styleCode }
+    : { dark: defaultEntry.styleCode.dark, light: defaultEntry.styleCode.light };
