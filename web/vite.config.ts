@@ -30,18 +30,20 @@ export default defineConfig({
   // block and rely on Vitest's runtime validation rather than TS.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   test: {
-    // Node environment: none of Signal's current tests touch the DOM.
-    // The jsdom environment combined with the default forks pool
-    // hangs worker spin-up on this Dropbox-mounted workspace path
-    // (URL-encoded spaces in the cwd confuse vitest's worker
-    // resolver). If a UI-mounting test arrives, switch this back to
-    // 'jsdom' for that file via `// @vitest-environment jsdom`.
+    // Node environment by default; per-file jsdom opt-in stays via
+    // `// @vitest-environment jsdom` (placeSignMarker.test.ts).
     environment: 'node',
-    pool: 'forks',
+    // THREADS pool, single worker, no isolation. The forks pool can't
+    // spawn a SECOND worker on this Dropbox-mounted workspace path
+    // (URL-encoded spaces in the cwd confuse the worker resolver), so
+    // any `@vitest-environment jsdom` file hit a 60s spawn timeout and
+    // was silently DROPPED from the run (25 files reported, 26 exist).
+    // worker_threads don't re-spawn a process, so the jsdom file runs;
+    // singleThread + isolate:false avoids the per-file worker churn
+    // that costs ~50s of environment setup on this filesystem.
+    pool: 'threads',
     // Vitest 4 dropped `poolOptions` from `InlineConfig`'s type but
-    // still accepts it at runtime; using it (or its v4 top-level
-    // siblings `forks` / `threads`) tightens the worker spin-up
-    // path that times out on this workspace's URL-encoded path.
-    forks: { singleFork: true, isolate: false },
+    // still accepts the v4 top-level pool-named siblings at runtime.
+    threads: { singleThread: true, isolate: false },
   } as any,
 });
