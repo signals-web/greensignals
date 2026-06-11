@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { ensureDemoProject, getRepos } from './lib/repo.ts';
 import { hasLeftoverCuBoulderMetadata } from './lib/cuBoulderDetect.ts';
 import { useCurrentUser, getAuthClient } from './lib/auth.ts';
@@ -47,6 +47,16 @@ export function App() {
   const [project, setProject] = useState<SosisuProject | null>(null);
   const [signTypesMap, setSignTypesMap] = useState<Record<string, SignType>>({});
   const [instances, setInstances] = useState<SignInstance[]>([]);
+  // `instances` mirrors the full store ledger — including soft-deleted
+  // (archived) records. Keeping archived records in state lets the bulk
+  // regenerate flows round-trip the whole ledger through
+  // `setInstanceStore(...)` without hard-dropping them. Everything
+  // user-facing (lists, map markers, counts, CSV export, scheduling)
+  // consumes this filtered view instead.
+  const activeInstances = useMemo(
+    () => instances.filter((i) => !i.archivedAt),
+    [instances],
+  );
   const [destinations, setDestinations] = useState<DestinationPlace[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
@@ -234,12 +244,16 @@ export function App() {
       unsubInstances = subscribeInstances((insts) => {
         if (cancelled) return;
         setInstances(insts);
+        // Selection and the fresh-start check only consider live records —
+        // archiving the current sign must clear the selection just like
+        // the old hard delete did.
+        const active = insts.filter((i) => !i.archivedAt);
         setCurrentId((prev) => {
-          if (prev && insts.some((i) => i.id === prev)) return prev;
-          return insts[0]?.id ?? null;
+          if (prev && active.some((i) => i.id === prev)) return prev;
+          return active[0]?.id ?? null;
         });
         // Auto-show map when starting fresh with no instances
-        if (insts.length === 0) {
+        if (active.length === 0) {
           setShowMapOverview(true);
         }
       });
@@ -335,8 +349,9 @@ export function App() {
       if (!project) return;
       // Archive the sign type (soft delete)
       await getRepos().signTypes.archive(project.id, signTypeId);
-      // Delete all instances of this type
-      const toDelete = instances.filter((i) => i.signTypeId === signTypeId);
+      // Archive all live instances of this type (deleteInstance is the
+      // soft-delete — already-archived records are left untouched)
+      const toDelete = activeInstances.filter((i) => i.signTypeId === signTypeId);
       for (const inst of toDelete) {
         deleteInstance(inst.id);
       }
@@ -346,7 +361,7 @@ export function App() {
         return prev;
       });
     },
-    [project, instances],
+    [project, activeInstances],
   );
 
   // ── Destination placement + drag ──────────────────────────────────────
@@ -494,8 +509,8 @@ export function App() {
         updatedAt: new Date().toISOString(),
       });
       if (!policyChanged) return;
-      // Find affected instances. If there are zero, no point asking.
-      const affected = instances.filter((i) => i.signTypeId === next.id);
+      // Find affected (live) instances. If there are zero, no point asking.
+      const affected = activeInstances.filter((i) => i.signTypeId === next.id);
       if (affected.length === 0) return;
       const label = next.code || next.name || 'this type';
       const ok = confirm(
@@ -510,6 +525,9 @@ export function App() {
       const allTypes = Object.values(signTypesMap).map((st) =>
         st.id === next.id ? next : st,
       );
+      // Pass the FULL ledger (archived included) — the generator passes
+      // archived records through untouched, and the wholesale store
+      // replace below must not hard-drop them.
       const result = generateAllSignSchedules({
         instances,
         destinations,
@@ -528,7 +546,7 @@ export function App() {
       await getRepos().projects.save(updatedProject);
       setProject(updatedProject);
     },
-    [project, instances, destinations, signTypesMap],
+    [project, instances, activeInstances, destinations, signTypesMap],
   );
 
   // ── CU Boulder demo seed ──────────────────────────────────────────────
@@ -648,7 +666,7 @@ export function App() {
       const everGenerated = !!project.lastGeneratedAt;
       let mode: 'replace-auto' | 'replace-all' = 'replace-auto';
       if (everGenerated) {
-        const manualCount = instances.reduce((n, inst) => {
+        const manualCount = activeInstances.reduce((n, inst) => {
           for (const side of inst.sides) {
             for (const row of side.destinations) {
               if (row.auto !== true) n++;
@@ -687,6 +705,9 @@ export function App() {
 
       setGenerating(true);
       try {
+        // Full ledger in, full ledger out — archived instances pass
+        // through the generator untouched so the wholesale replace
+        // below preserves them.
         const { updatedInstances, summary } = generateAllSignSchedules({
           instances,
           destinations,
@@ -726,18 +747,19 @@ export function App() {
         setGenerating(false);
       }
     },
-    [project, instances, destinations, signTypesMap],
+    [project, instances, activeInstances, destinations, signTypesMap],
   );
 
   const handleResumeReview = useCallback(
     (signId?: string) => {
-      const target = signId ?? instances.find((i) => i.reviewStatus === 'pending')?.id;
+      const target =
+        signId ?? activeInstances.find((i) => i.reviewStatus === 'pending')?.id;
       if (target) setCurrentId(target);
       setViewMode('instances');
       setShowMapOverview(false);
       setShowBuildingNames(false);
     },
-    [instances],
+    [activeInstances],
   );
 
   // ── Phase 4 follow-up: live single-sign regen on facing change ────────
@@ -845,13 +867,13 @@ export function App() {
     [project, destinations, reviewerName, auth],
   );
 
-  // Filtered list
+  // Filtered list — review navigation only ever walks live instances
   const filtered = filter
-    ? instances.filter((inst) => {
+    ? activeInstances.filter((inst) => {
         const st = signTypesMap[inst.signTypeId];
         return st?.code === filter;
       })
-    : instances;
+    : activeInstances;
 
   const currentIndex = filtered.findIndex((i) => i.id === currentId);
   const currentInstance = currentIndex >= 0 ? filtered[currentIndex] : null;
@@ -877,7 +899,7 @@ export function App() {
 
   const handleExport = useCallback(() => {
     const header = ['Sign ID', 'Type', 'Location', 'Neighborhood', 'Lat', 'Lng', 'Status', 'Notes'];
-    const rows = instances.map((inst) => {
+    const rows = activeInstances.map((inst) => {
       const st = signTypesMap[inst.signTypeId];
       return [
         inst.id,
@@ -896,7 +918,7 @@ export function App() {
     a.href = URL.createObjectURL(blob);
     a.download = `messaging_reviewed_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
-  }, [instances, signTypesMap]);
+  }, [activeInstances, signTypesMap]);
 
   // Auth gate
   if (auth.status === 'loading') {
@@ -919,7 +941,8 @@ export function App() {
       <Sidebar
         projectName={project.name}
         projectClient={project.client}
-        instances={instances}
+        project={project}
+        instances={activeInstances}
         signTypes={signTypesMap}
         destinations={destinations}
         currentId={currentId}
@@ -955,7 +978,7 @@ export function App() {
         {viewMode === 'project' ? (
           <ProjectDashboard
             project={project}
-            instances={instances}
+            instances={activeInstances}
             signTypes={signTypesMap}
             destinations={destinations}
             isDark={isDark}
@@ -972,13 +995,13 @@ export function App() {
         ) : showBuildingNames ? (
           <BuildingNames
             destinations={destinations}
-            instances={instances}
+            instances={activeInstances}
             onUpdate={handleUpdateDestination}
             onClose={() => setShowBuildingNames(false)}
           />
         ) : showMapOverview ? (
           <MapOverview
-            instances={instances}
+            instances={activeInstances}
             signTypes={signTypesMap}
             isDark={isDark}
             basemapId={project?.basemapId}
@@ -1010,7 +1033,8 @@ export function App() {
                 key={`${currentInstance.id}-${currentInstance.updatedAt}`}
                 instance={currentInstance}
                 signType={signTypesMap[currentInstance.signTypeId]}
-                allInstances={instances}
+                project={project}
+                allInstances={activeInstances}
                 signTypes={signTypesMap}
                 onNext={goNext}
                 onPrev={goPrev}
@@ -1033,7 +1057,7 @@ export function App() {
               <div className="empty-state">
                 {Object.keys(signTypesMap).length === 0
                   ? 'No sign types yet. Create one in Solid, then hand off to Signal.'
-                  : instances.length === 0
+                  : activeInstances.length === 0
                     ? 'No instances placed yet. Switch to the Types tab and click "+ Place" to place signs on the map.'
                     : 'No signs match the current filter.'}
               </div>
@@ -1043,7 +1067,7 @@ export function App() {
       </main>
       <RightPanel
         instance={currentInstance}
-        allInstances={instances}
+        allInstances={activeInstances}
         reviewerName={reviewerName}
         onRequireReviewer={requireReviewer}
         onBuildingNames={() => setShowBuildingNames(true)}

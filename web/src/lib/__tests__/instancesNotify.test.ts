@@ -134,8 +134,12 @@ describe('subscribeInstances — fresh array reference on every notify', () => {
 
     expect(seen).toHaveLength(2);
     expect(seen[1]).not.toBe(initialRef);
-    expect(seen[1]).toHaveLength(1);
-    expect(seen[1]![0]!.id).toBe('s-2');
+    // Soft delete — the record stays in the ledger with `archivedAt`
+    // set; consumers filter it out of user-facing views. See
+    // instancesArchive.test.ts for the full archive contract.
+    expect(seen[1]).toHaveLength(2);
+    expect(seen[1]!.find((i) => i.id === 's-1')!.archivedAt).toBeTruthy();
+    expect(seen[1]!.find((i) => i.id === 's-2')!.archivedAt).toBeUndefined();
   });
 
   it('the directionLocked toggle scenario specifically — flips and notifies', () => {

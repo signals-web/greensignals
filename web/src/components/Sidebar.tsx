@@ -3,7 +3,9 @@ import type {
   SignType,
   DestinationPlace,
   DestinationTier,
+  SosisuProject,
 } from '../platform/index.ts';
+import { useProjectRole } from '../lib/auth.ts';
 import { CategoryIcon, CATEGORY_META } from './CategoryIcon.tsx';
 import { DestinationsPanel } from './DestinationsPanel.tsx';
 import { SignTypePolicyEditor } from './SignTypePolicyEditor.tsx';
@@ -16,6 +18,9 @@ export type ViewMode = 'project' | 'instances' | 'types' | 'destinations';
 interface Props {
   projectName: string;
   projectClient?: string;
+  /** Project record — `members` drives role resolution for capability
+   *  gating (instance/type delete, destination archive). */
+  project: Pick<SosisuProject, 'members'>;
   instances: SignInstance[];
   signTypes: Record<string, SignType>;
   destinations: DestinationPlace[];
@@ -85,6 +90,7 @@ function shortNbhd(n: string): string {
 export function Sidebar({
   projectName,
   projectClient,
+  project,
   instances,
   signTypes,
   destinations,
@@ -119,6 +125,16 @@ export function Sidebar({
   // Phase 4 lifted viewMode to App so the right pane (ProjectDashboard
   // vs SignCard / MapOverview / etc.) can branch on the same value the
   // sidebar tabs select.
+
+  // Role-gated destructive affordances: instance delete needs
+  // `instance.edit`, type delete needs `signType.archive`, destination
+  // archive needs `project.edit` (no finer-grained capability exists —
+  // see `code/platform/src/auth/permissions.ts`). Reviewers/viewers see
+  // the lists without the × buttons.
+  const { can } = useProjectRole(project);
+  const canDeleteInstance = can('instance.edit');
+  const canDeleteType = can('signType.archive');
+  const canArchiveDestination = can('project.edit');
 
   const counts = { approved: 0, edited: 0, flagged: 0, pending: 0 };
   for (const inst of instances) {
@@ -226,6 +242,7 @@ export function Sidebar({
           destinations={destinations}
           onCreate={onCreateDestination}
           onArchive={onArchiveDestination}
+          canArchive={canArchiveDestination}
           {...(onOpenBuildingNames && { onOpenBuildingNames })}
           onPlaceOnMap={onPlaceDestinationOnMap}
           maptilerKey={maptilerKey}
@@ -299,18 +316,20 @@ export function Sidebar({
                     {inst.neighborhood ? shortNbhd(inst.neighborhood) : st?.code ?? ''}
                   </span>
                   <span className={`status-dot dot-${inst.reviewStatus}`} />
-                  <button
-                    className="instance-delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm(`Delete instance ${displaySignId(inst.id)}?`)) {
-                        onDeleteInstance(inst.id);
-                      }
-                    }}
-                    title="Delete instance"
-                  >
-                    {'×'}
-                  </button>
+                  {canDeleteInstance && (
+                    <button
+                      className="instance-delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Delete instance ${displaySignId(inst.id)}?`)) {
+                          onDeleteInstance(inst.id);
+                        }
+                      }}
+                      title="Delete instance"
+                    >
+                      {'×'}
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -345,17 +364,19 @@ export function Sidebar({
                   >
                     + Place
                   </button>
-                  <button
-                    className="type-delete-btn"
-                    onClick={() => {
-                      if (confirm(`Delete ${st.code}? This removes ${count} placed instance${count !== 1 ? 's' : ''}.`)) {
-                        onDeleteType(st.id);
-                      }
-                    }}
-                    title="Delete type and its instances"
-                  >
-                    {'×'}
-                  </button>
+                  {canDeleteType && (
+                    <button
+                      className="type-delete-btn"
+                      onClick={() => {
+                        if (confirm(`Delete ${st.code}? This removes ${count} placed instance${count !== 1 ? 's' : ''}.`)) {
+                          onDeleteType(st.id);
+                        }
+                      }}
+                      title="Delete type and its instances"
+                    >
+                      {'×'}
+                    </button>
+                  )}
                 </div>
                 {/* Phase 5: per-type policy editor (capacity, anchors-only,
                     max-walk-minutes). Hidden when the parent doesn't supply

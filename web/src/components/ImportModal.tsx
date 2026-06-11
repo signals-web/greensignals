@@ -160,7 +160,9 @@ export function ImportModal({ signTypes, onClose, onBuildingsImported }: Props) 
   };
 
   const parseDestinationRows = (rows: Record<string, string>[], fileName: string) => {
-    const instances = getInstances();
+    // Live instances only — a CSV row pointing at a soft-deleted sign
+    // should land in the "unmatched" bucket, not resurrect its data.
+    const instances = getInstances().filter((i) => !i.archivedAt);
     const idSet = new Set(instances.map((i) => i.id.toLowerCase()));
 
     const dests: ParsedDestination[] = rows
@@ -243,7 +245,7 @@ export function ImportModal({ signTypes, onClose, onBuildingsImported }: Props) 
 
     let updated = 0;
     for (const [instId, dests] of byInstance) {
-      const inst = getInstances().find((i) => i.id === instId);
+      const inst = getInstances().find((i) => i.id === instId && !i.archivedAt);
       if (!inst) continue;
 
       // Build new Side A destinations (append to existing)

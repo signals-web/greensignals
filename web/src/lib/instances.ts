@@ -58,7 +58,9 @@ function notify() {
   }
 }
 
-/** Get all instances. */
+/** Get all instances — INCLUDING soft-deleted (archived) ones. The store
+ *  is the full ledger; UI consumers filter `!inst.archivedAt` the same way
+ *  App.tsx filters archived sign types from the repo subscription. */
 export function getInstances(): SignInstance[] {
   return load();
 }
@@ -121,12 +123,18 @@ export function subscribeInstances(cb: Listener): () => void {
   return () => _listeners.delete(cb);
 }
 
-/** Delete a single instance by ID. */
+/** Soft-delete a single instance by ID. Sets `archivedAt` (matching the
+ *  platform's SignType / DestinationPlace archive semantics) instead of
+ *  removing the record, so the ID stays reserved and the record survives
+ *  for audit / un-delete tooling. Returns false when the instance doesn't
+ *  exist or is already archived. */
 export function deleteInstance(id: string): boolean {
   const instances = load();
   const idx = instances.findIndex((i) => i.id === id);
   if (idx < 0) return false;
-  instances.splice(idx, 1);
+  if (instances[idx]!.archivedAt) return false;
+  const now = new Date().toISOString();
+  instances[idx] = { ...instances[idx]!, archivedAt: now, updatedAt: now };
   persist();
   notify();
   return true;
@@ -160,7 +168,9 @@ export function addInstance(
   const now = new Date().toISOString();
   const instances = load();
   const prefix = typeCode?.toUpperCase() || 'SIGN';
-  // Find the highest existing number for this prefix
+  // Find the highest existing number for this prefix. Archived instances
+  // count too — a soft-deleted MAP-03 keeps its ID reserved so the next
+  // placement becomes MAP-04, never a duplicate of the archived record.
   let maxNum = 0;
   for (const inst of instances) {
     const match = inst.id.match(new RegExp(`^${prefix}-(\\d+)$`, 'i'));

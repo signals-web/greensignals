@@ -39,6 +39,10 @@ interface Props {
     isAnchor?: boolean;
   }) => Promise<void> | void;
   onArchive: (destinationPlaceId: string) => Promise<void> | void;
+  /** Role gate for the archive (×) affordance. The Sidebar resolves the
+   *  current user's capabilities and passes the verdict down; defaults
+   *  to true so older callers keep the button. */
+  canArchive?: boolean;
   /** Phase 5b: open the BuildingNames admin sheet. Wired to the
    *  panel-header "Edit anchors in Building Names →" link. Optional
    *  so older parents still compile; the link hides when missing. */
@@ -72,6 +76,7 @@ export function DestinationsPanel({
   destinations,
   onCreate,
   onArchive,
+  canArchive = true,
   onOpenBuildingNames,
   mapCenter,
   prefilledCoords,
@@ -374,17 +379,19 @@ export function DestinationsPanel({
                   {dest.lat.toFixed(4)}, {dest.lng.toFixed(4)}
                 </span>
               </div>
-              <button
-                className="destination-delete-btn"
-                onClick={() => {
-                  if (confirm(`Archive destination "${dest.name}"?`)) {
-                    void onArchive(dest.id);
-                  }
-                }}
-                title="Archive destination"
-              >
-                {'×'}
-              </button>
+              {canArchive && (
+                <button
+                  className="destination-delete-btn"
+                  onClick={() => {
+                    if (confirm(`Archive destination "${dest.name}"?`)) {
+                      void onArchive(dest.id);
+                    }
+                  }}
+                  title="Archive destination"
+                >
+                  {'×'}
+                </button>
+              )}
             </div>
           );
         })}

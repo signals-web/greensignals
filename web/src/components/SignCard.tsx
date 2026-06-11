@@ -12,6 +12,11 @@ import { CategoryIcon, CATEGORY_META } from './CategoryIcon.tsx';
 import { ArrowDisplay, ArrowPicker } from './ArrowWidgets.tsx';
 import { Compass } from './Compass.tsx';
 import { updateInstance } from '../lib/instances.ts';
+import {
+  collectUnlinkedNames,
+  pickStubCoords,
+  linkInstanceByName,
+} from '../lib/link-handoff-destinations.ts';
 import { logActivity } from './RightPanel.tsx';
 import {
   splitSides,
@@ -37,9 +42,9 @@ import {
   buildHandoffUrl,
   policyForSignType,
   resolveUseShortName,
-  roleCan,
 } from '../platform/index.ts';
-import type { ProjectRole } from '../platform/index.ts';
+import type { SosisuProject } from '../platform/index.ts';
+import { useProjectRole } from '../lib/auth.ts';
 import { DestinationPicker } from './DestinationPicker.tsx';
 // Phase 3's `<DestinationSuggestions />` panel was removed from the
 // edit-mode render in Phase 4 (bulk auto-population from the Project
@@ -56,6 +61,9 @@ const FACING_DIRS: FacingDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'N
 interface Props {
   instance: SignInstance;
   signType: SignType | undefined;
+  /** Project record — `members` drives role resolution for capability
+   *  gating (facing-lock toggle, delete affordance). */
+  project: Pick<SosisuProject, 'members'>;
   allInstances: SignInstance[];
   signTypes: Record<string, SignType>;
   onNext: () => void;
@@ -246,6 +254,7 @@ function createInsetVectorMarker(color: string): HTMLDivElement {
 export function SignCard({
   instance,
   signType,
+  project,
   allInstances,
   signTypes,
   onNext,
@@ -312,17 +321,19 @@ export function SignCard({
   // facing) and silently disabled the dial in view mode.
   const facingLocked = instance.directionLocked ?? false;
 
-  // Direction-lock toggle gate. Anyone with the `instance.edit`
-  // capability sees the padlock as a clickable button; anyone else
-  // sees a static span (when locked) or nothing (when unlocked).
-  // Demo mode hardcodes everyone to 'owner' until real auth lands —
-  // see `code/platform/src/auth/permissions.ts` for the role
-  // capability table. The previous in-place mutation in
-  // `lib/instances.ts` made this look broken (clicks persisted, but
-  // React's identity-bail-out skipped the re-render); fixed in
+  // Role-gated affordances. The current user's role is resolved from
+  // project.members (demo mode signs in as the seeded project owner,
+  // so everything stays enabled there) — see
+  // `code/platform/src/auth/permissions.ts` for the role capability
+  // table. `instance.edit` gates both the padlock toggle (anyone else
+  // sees a static span when locked, nothing when unlocked) and the
+  // Delete button. The previous in-place mutation in
+  // `lib/instances.ts` made the padlock look broken (clicks persisted,
+  // but React's identity-bail-out skipped the re-render); fixed in
   // `notify()` so the toggle reflects in the UI on click.
-  const currentRole: ProjectRole = 'owner';
-  const canToggleLock = roleCan(currentRole, 'instance.edit');
+  const { can } = useProjectRole(project);
+  const canToggleLock = can('instance.edit');
+  const canDeleteInstance = can('instance.edit');
 
   const mapRef = useRef<HTMLDivElement>(null);
   const mlMapRef = useRef<any>(null);
@@ -784,6 +795,49 @@ export function SignCard({
     logActivity({ signId: instance.id, action: 'edited', reviewer: name });
     setEditing(false);
   }, [instance.id, instance.lat, instance.lng, editDests, editNotes, editFacing, requireReviewer, onEnsureDestinationPlaces]);
+
+  // ── Open in Surface (Phase 6 multi-instance handoff) ─────────────────
+  // Emit a v3 envelope with ALL placed instances of this sign type so
+  // Surface lands each as a separate Instance in the family.
+  //
+  // DIAGNOSE-V2 (2026-06-11): before encoding, link every still-unlinked
+  // destination to a DestinationPlace. Surface's router skips destinations
+  // without a `destinationPlaceId`, so CSV-imported / bulk-generated signs
+  // that were never hand-edited would hand off with zero routable rows. This
+  // is the last point the data is Signal's — ensure the places (reusing B4's
+  // stub-coords helper), persist the linkage, and ship the linked instances.
+  //
+  // The target tab is opened SYNCHRONOUSLY (empty) inside the click gesture to
+  // dodge popup blockers, then navigated once linking resolves. Linking is
+  // best-effort: any failure (or absent coords/callback) still opens the
+  // handoff with whatever linkage already exists.
+  const openInSurface = useCallback(async () => {
+    if (!signType) return;
+    const siblings = allInstances.filter((i) => i.signTypeId === signType.id);
+    const win = window.open('', 'sosisu-surface');
+    let linked = siblings;
+    try {
+      const names = collectUnlinkedNames(siblings);
+      const coords = pickStubCoords(siblings);
+      if (names.length > 0 && coords && onEnsureDestinationPlaces) {
+        const places = await onEnsureDestinationPlaces(names, coords);
+        const linkByName = new Map<string, string>();
+        names.forEach((n, i) => {
+          if (places[i]) linkByName.set(n.toLowerCase(), places[i].id);
+        });
+        linked = siblings.map((inst) => {
+          const { instance: next, changed } = linkInstanceByName(inst, linkByName);
+          if (changed) updateInstance(inst.id, { sides: next.sides });
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('[handoff] destination linking failed; opening with current data', err);
+    }
+    const url = buildHandoffUrl(SURFACE_URL, signType, PROJECT_ID, undefined, linked);
+    if (win) win.location.href = url;
+    else window.open(url, 'sosisu-surface');
+  }, [signType, allInstances, onEnsureDestinationPlaces]);
 
   // ── Edit helpers (flat array) ────────────────────────────────────
   // Any user-initiated field edit clears the row's `auto` flag — the
@@ -1320,7 +1374,7 @@ export function SignCard({
             <button className="action-btn btn-approve" onClick={handleApprove}>Approve</button>
             <button className="action-btn btn-edit" onClick={startEdit}>Edit destinations</button>
             <button className="action-btn btn-flag" onClick={handleFlag}>Flag for discussion</button>
-            {onDeleteInstance && (
+            {onDeleteInstance && canDeleteInstance && (
               <button
                 className="action-btn btn-delete-instance"
                 onClick={() => {
@@ -1336,28 +1390,7 @@ export function SignCard({
             {signType && (
               <button
                 className="action-btn btn-surface"
-                onClick={() => {
-                  // Phase 6 multi-instance — emit a v2 envelope with
-                  // ALL instances of this sign type so Surface lands
-                  // every placed sign as a separate Instance in the
-                  // family, not just the currently-selected one. The
-                  // currently-selected instance is included naturally
-                  // since it's part of `allInstances`. Pre-Phase-6
-                  // this passed only `instance` (the focused card's
-                  // sign) so the other N-1 instances were silently
-                  // dropped on the Surface side.
-                  const siblings = allInstances.filter(
-                    (i) => i.signTypeId === signType.id,
-                  );
-                  const url = buildHandoffUrl(
-                    SURFACE_URL,
-                    signType,
-                    PROJECT_ID,
-                    undefined,
-                    siblings,
-                  );
-                  window.open(url, 'sosisu-surface');
-                }}
+                onClick={openInSurface}
                 title="Open all placed signs of this type in Surface for layout"
               >
                 Open in Surface →

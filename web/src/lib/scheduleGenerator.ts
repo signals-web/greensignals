@@ -197,6 +197,15 @@ export function generateAllSignSchedules(
   const updatedInstances: SignInstance[] = [];
 
   for (const instance of instances) {
+    // Soft-deleted signs pass through untouched — the caller hands us the
+    // full ledger and persists `updatedInstances` wholesale, so dropping
+    // (or regenerating) archived records here would corrupt the store.
+    // They don't count as "skipped" either: skipped surfaces in the
+    // user-facing summary, and a deleted sign isn't news.
+    if (instance.archivedAt) {
+      updatedInstances.push(instance);
+      continue;
+    }
     if (instance.lat == null || instance.lng == null || !instance.facing) {
       summary.signsSkipped++;
       updatedInstances.push(instance);
