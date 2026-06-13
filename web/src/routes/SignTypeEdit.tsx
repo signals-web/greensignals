@@ -1,5 +1,8 @@
 import { useEffect, useState, useCallback, type FormEvent } from 'react';
 import { getRepos } from '../lib/repo.ts';
+import { getInstances, updateInstance } from '../lib/instances.ts';
+import { buildSurfaceHandoffUrl } from '../lib/surface-handoff.ts';
+import { batchEnsureDestinationPlaces } from '../lib/ensure-destination-place.ts';
 import {
   blankSignType,
   buildHandoffUrl,
@@ -10,6 +13,12 @@ import {
   type SignType,
   type LineSpec,
 } from '../platform/index.ts';
+
+/** Attribution stamped on any DestinationPlace minted while linking
+ *  destinations for the type-editor handoff (the editor has no reviewer
+ *  identity in scope). Existing places — the common case — are matched by
+ *  name and need no attribution. */
+const HANDOFF_CREATED_BY = 'signal-handoff';
 
 // Dev-time targets for the three apps. Override via Vite env (`VITE_SURFACE_URL`,
 // `VITE_SOLID_URL`) when running preview builds or pointing at a deployed
@@ -159,7 +168,55 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
   }
 
   function handleOpenInSurface() {
-    openInTarget(SURFACE_URL);
+    if (!draft || !signTypeId) return;
+    // Open the target tab SYNCHRONOUSLY (empty) inside the click gesture to
+    // dodge popup blockers, then navigate once the envelope is built.
+    const win = window.open('', 'sosisu-surface');
+    const id = signTypeId;
+    // Read the canonical stored record (not the in-memory draft) so the URL
+    // reflects what was last persisted — same contract as before. We now ALSO
+    // ship this type's placed instances with their destinations linked, so
+    // Surface fills the instance slots instead of synthesizing empty ones.
+    getRepos()
+      .signTypes.get(projectId, id)
+      .then(async (stored) => {
+        if (!stored) {
+          win?.close();
+          return;
+        }
+        const instances = getInstances().filter(
+          (i) => i.signTypeId === id && !i.archivedAt,
+        );
+        const url = await buildSurfaceHandoffUrl({
+          surfaceUrl: SURFACE_URL,
+          signType: stored,
+          projectId,
+          instances,
+          ensurePlaces: async (names, coords) => {
+            const existing = await getRepos().destinationPlaces.list(projectId);
+            const { resolved, created } = batchEnsureDestinationPlaces({
+              names,
+              existingPlaces: existing,
+              projectId,
+              stubLat: coords.lat,
+              stubLng: coords.lng,
+              createdBy: HANDOFF_CREATED_BY,
+            });
+            if (created.length > 0) {
+              await Promise.all(
+                created.map((d) =>
+                  getRepos().destinationPlaces.save(projectId, d),
+                ),
+              );
+            }
+            return resolved;
+          },
+          persistInstance: (instanceId, sides) =>
+            updateInstance(instanceId, { sides }),
+        });
+        if (win) win.location.href = url;
+        else window.open(url, 'sosisu-surface');
+      });
   }
 
   function handleOpenInSolid() {
@@ -180,22 +237,6 @@ export function SignTypeEdit({ projectId, signTypeId, onDone }: Props) {
           ? `${SOLID_URL}/?viewType=${encodeURIComponent(stored.solidTypeId)}`
           : buildHandoffUrl(SOLID_URL, stored, projectId);
         window.open(url, 'sosisu-solid');
-      });
-  }
-
-  function openInTarget(targetOrigin: string) {
-    if (!draft || !signTypeId) return;
-    // Only offer the handoff once the draft has been saved at least once —
-    // otherwise the target app would receive unsaved edits the user may
-    // intend to discard. We read the canonical stored record from the repo
-    // rather than the in-memory draft so the URL always reflects what was
-    // last persisted.
-    getRepos()
-      .signTypes.get(projectId, signTypeId)
-      .then((stored) => {
-        if (!stored) return;
-        const url = buildHandoffUrl(targetOrigin, stored, projectId);
-        window.open(url, 'sosisu-surface');
       });
   }
 

@@ -65,3 +65,47 @@ export function ensureDestinationPlace(
   });
   return { place, wasCreated: true };
 }
+
+export interface BatchEnsureResult {
+  /** One place per input name, in input order (existing match or new). */
+  resolved: DestinationPlace[];
+  /** Only the newly-minted records — the caller persists these. */
+  created: DestinationPlace[];
+}
+
+/** Resolve/ensure a DestinationPlace for each name in `names`, in input
+ *  order. De-dups WITHIN the batch (a name minted earlier in the same call
+ *  is matched, not re-created) as well as against `existingPlaces`. Pure —
+ *  the caller persists `created` (existing matches need no write).
+ *
+ *  Extracted so both "Open in Surface" entry points (SignCard's per-instance
+ *  flow via App, and SignTypeEdit's type-level flow) share ONE resolver
+ *  instead of each re-deriving the dedup/stub-coords loop. */
+export function batchEnsureDestinationPlaces(args: {
+  names: string[];
+  existingPlaces: DestinationPlace[];
+  projectId: string;
+  stubLat: number;
+  stubLng: number;
+  createdBy: string;
+}): BatchEnsureResult {
+  let working = args.existingPlaces;
+  const created: DestinationPlace[] = [];
+  const resolved: DestinationPlace[] = [];
+  for (const name of args.names) {
+    const { place, wasCreated } = ensureDestinationPlace({
+      name,
+      existingPlaces: working,
+      projectId: args.projectId,
+      stubLat: args.stubLat,
+      stubLng: args.stubLng,
+      createdBy: args.createdBy,
+    });
+    if (wasCreated) {
+      created.push(place);
+      working = [...working, place];
+    }
+    resolved.push(place);
+  }
+  return { resolved, created };
+}

@@ -30,7 +30,7 @@ import {
   HANDOFF_FROM_SOLID_QUERY_PARAM,
 } from './platform/index.ts';
 import { blankDestinationPlace, DEFAULT_SCORING_CONFIG } from './platform/index.ts';
-import { ensureDestinationPlace } from './lib/ensure-destination-place.ts';
+import { batchEnsureDestinationPlaces } from './lib/ensure-destination-place.ts';
 import type {
   SosisuProject,
   SignType,
@@ -467,24 +467,14 @@ export function App() {
         (auth.status === 'signed-in'
           ? auth.user.displayName || auth.user.email || auth.user.uid
           : 'demo');
-      let working = destinations;
-      const created: DestinationPlace[] = [];
-      const resolved: DestinationPlace[] = [];
-      for (const name of names) {
-        const { place, wasCreated } = ensureDestinationPlace({
-          name,
-          existingPlaces: working,
-          projectId: project.id,
-          stubLat: stub.lat,
-          stubLng: stub.lng,
-          createdBy: attribution,
-        });
-        if (wasCreated) {
-          created.push(place);
-          working = [...working, place];
-        }
-        resolved.push(place);
-      }
+      const { resolved, created } = batchEnsureDestinationPlaces({
+        names,
+        existingPlaces: destinations,
+        projectId: project.id,
+        stubLat: stub.lat,
+        stubLng: stub.lng,
+        createdBy: attribution,
+      });
       if (created.length > 0) {
         await Promise.all(
           created.map((d) => getRepos().destinationPlaces.save(project.id, d)),

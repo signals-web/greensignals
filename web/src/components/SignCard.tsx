@@ -12,11 +12,7 @@ import { CategoryIcon, CATEGORY_META } from './CategoryIcon.tsx';
 import { ArrowDisplay, ArrowPicker } from './ArrowWidgets.tsx';
 import { Compass } from './Compass.tsx';
 import { updateInstance } from '../lib/instances.ts';
-import {
-  collectUnlinkedNames,
-  pickStubCoords,
-  linkInstanceByName,
-} from '../lib/link-handoff-destinations.ts';
+import { buildSurfaceHandoffUrl } from '../lib/surface-handoff.ts';
 import { logActivity } from './RightPanel.tsx';
 import {
   splitSides,
@@ -39,7 +35,6 @@ import { getMapStyleUrl } from '../lib/mapStyle.ts';
 import { NeighborhoodPanel } from './NeighborhoodPanel.tsx';
 import { analyzeNeighborhood } from '../lib/nearbyOverlap.ts';
 import {
-  buildHandoffUrl,
   policyForSignType,
   resolveUseShortName,
 } from '../platform/index.ts';
@@ -814,27 +809,17 @@ export function SignCard({
   const openInSurface = useCallback(async () => {
     if (!signType) return;
     const siblings = allInstances.filter((i) => i.signTypeId === signType.id);
+    // Open the target tab SYNCHRONOUSLY (empty) inside the click gesture to
+    // dodge popup blockers, then navigate once linking resolves.
     const win = window.open('', 'sosisu-surface');
-    let linked = siblings;
-    try {
-      const names = collectUnlinkedNames(siblings);
-      const coords = pickStubCoords(siblings);
-      if (names.length > 0 && coords && onEnsureDestinationPlaces) {
-        const places = await onEnsureDestinationPlaces(names, coords);
-        const linkByName = new Map<string, string>();
-        names.forEach((n, i) => {
-          if (places[i]) linkByName.set(n.toLowerCase(), places[i].id);
-        });
-        linked = siblings.map((inst) => {
-          const { instance: next, changed } = linkInstanceByName(inst, linkByName);
-          if (changed) updateInstance(inst.id, { sides: next.sides });
-          return next;
-        });
-      }
-    } catch (err) {
-      console.error('[handoff] destination linking failed; opening with current data', err);
-    }
-    const url = buildHandoffUrl(SURFACE_URL, signType, PROJECT_ID, undefined, linked);
+    const url = await buildSurfaceHandoffUrl({
+      surfaceUrl: SURFACE_URL,
+      signType,
+      projectId: PROJECT_ID,
+      instances: siblings,
+      ensurePlaces: onEnsureDestinationPlaces,
+      persistInstance: (id, sides) => updateInstance(id, { sides }),
+    });
     if (win) win.location.href = url;
     else window.open(url, 'sosisu-surface');
   }, [signType, allInstances, onEnsureDestinationPlaces]);
