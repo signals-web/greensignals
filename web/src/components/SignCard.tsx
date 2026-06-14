@@ -19,7 +19,6 @@ import {
   estimateDestPos,
   FACING_DEG,
   type SplitSide,
-  type SplitDest,
 } from '../lib/directions.ts';
 import {
   buildDestinationLookup,

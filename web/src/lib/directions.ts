@@ -284,11 +284,11 @@ export function splitSides(
 
     const arrow = d.arrow;
 
-    // Up (270), upper diagonals (225, 315) -> front only
+    // Up (270), upper diagonals (225, 315) -> front only — handled by the
+    //   catch-all `else` branch below (front = anything not back/both),
+    //   so no explicit `isFront` flag is needed.
     // Down (90), lower diagonals (45, 135) -> back only (reflected)
     // Exactly left (180) or right (0/360) -> both sides
-    const isFront =
-      arrow === 270 || arrow === 225 || arrow === 315;
     const isBack =
       arrow === 90 || arrow === 45 || arrow === 135;
     const isBoth =

@@ -127,7 +127,6 @@ export function MapOverview({
 
   // Move mode state — which instance is being moved
   const [movingInstanceId, setMovingInstanceId] = useState<string | null>(null);
-  const movingMarkerRef = useRef<any>(null);
 
   // Tooltip element ref for placement mode
   const tooltipRef = useRef<HTMLDivElement>(null);

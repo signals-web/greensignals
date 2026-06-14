@@ -8,13 +8,12 @@ import { Sidebar, type ViewMode } from './components/Sidebar.tsx';
 import { SignCard } from './components/SignCard.tsx';
 import { MapOverview } from './components/MapOverview.tsx';
 import { ProjectDashboard } from './components/ProjectDashboard.tsx';
-import { RightPanel, logActivity } from './components/RightPanel.tsx';
+import { RightPanel } from './components/RightPanel.tsx';
 import { BuildingNames } from './components/BuildingNames.tsx';
 import { ImportModal } from './components/ImportModal.tsx';
 import { generateAllSignSchedules } from './lib/scheduleGenerator.ts';
 import { mergeBuildingsIntoDestinations } from './lib/buildingsToDestinations.ts';
 import {
-  getInstances,
   subscribeInstances,
   addInstance,
   deleteInstance,

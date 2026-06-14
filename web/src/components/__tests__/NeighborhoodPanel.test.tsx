@@ -80,13 +80,16 @@ const norlin = dp({
 const signTypes: Record<string, SignType> = {
   'st-nudge': {
     id: 'st-nudge',
-    projectId: 'p',
     code: 'NDG',
     name: 'Nudge',
     category: 'directional',
+    dimensionsMM: { w: 600, h: 1800, d: 60 },
+    copy: [],
+    materials: [],
+    mountType: 'ground',
     createdAt: NOW,
     updatedAt: NOW,
-  } as SignType,
+  },
 };
 
 const richAnalysis: NeighborhoodAnalysis = {
