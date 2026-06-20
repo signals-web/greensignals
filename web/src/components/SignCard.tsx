@@ -534,13 +534,14 @@ export function SignCard({
         }
       }
 
-      // Phase 5c follow-up: auto-fit the inset to bound the focal
-      // sign + every linked destination. Map signs (anchors campus-
-      // wide) used to leave their destinations off-screen; this
-      // ensures the dashed lines + dots are all visible on initial
-      // render. The reviewer can pan/zoom freely afterwards; the
-      // corner Focus button re-runs the same fit on demand.
-      handleFocusRef.current();
+      // No auto-fit on load. The map already opens centered on the focal
+      // sign at a STABLE zoom (the `new maplibregl.Map({ center: [lng, lat],
+      // zoom: 16 })` config above) with no zoom animation — recentring is
+      // handled by the per-sign rebuild's `center`, so navigating between
+      // signs / placing a sign shows each one steadily instead of a
+      // distracting per-sign `fitBounds` zoom bounce. The corner Focus
+      // button (handleFocus) still frames the sign + destinations on an
+      // explicit user click.
     });
 
     mlMapRef.current = map;
@@ -622,11 +623,11 @@ export function SignCard({
     }
   }, [hoveredDest]);
 
-  // Phase 5c follow-up: focus button handler. Re-fits the inset to
-  // bound the focal sign + every linked destination, with heads-up
-  // bearing preserved. Wired to the corner button on the inset and
-  // to the initial-load auto-fit (via `handleFocusRef`) so they
-  // share a single code path.
+  // Focus button handler. Re-fits the inset to bound the focal sign +
+  // every linked destination, with heads-up bearing preserved. Wired
+  // ONLY to the corner Focus button now — an explicit user click. The
+  // initial-load auto-fit that used to share this path was removed: it
+  // zoom-bounced the map on every sign navigation / placement.
   //
   // The pre-Phase-5c name-click handler that flew the map to a
   // single destination on row click is intentionally gone — the
@@ -647,11 +648,6 @@ export function SignCard({
       duration: 500,
     });
   }, [instance, destinations]);
-  // Captured in a ref so the map effect's `load` callback can call
-  // the latest version without re-running the effect on every
-  // closure-capture change.
-  const handleFocusRef = useRef(handleFocus);
-  handleFocusRef.current = handleFocus;
 
   // Reset editing when instance changes
   useEffect(() => { setEditing(false); }, [instance.id]);
