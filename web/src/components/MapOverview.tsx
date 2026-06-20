@@ -137,6 +137,25 @@ export function MapOverview({
   // map's lifetime (see main effect's cleanup).
   const destMarkersRef = useRef<Map<string, any>>(new Map());
 
+  // Sign markers live in a ref (not rebuilt by recreating the map) so the
+  // map can be created ONCE and markers re-synced on `instances` change —
+  // avoids the tile-reload flash that a full map rebuild caused on sign
+  // placement. `onSelectRef` keeps the popup "Review →" callback current
+  // for the map's once-registered global handler; `didInitialFitRef` gates
+  // the fit-to-all-signs to a single first run.
+  const signMarkersRef = useRef<Record<string, any>>({});
+  const onSelectRef = useRef(onSelectSign);
+  onSelectRef.current = onSelectSign;
+  const didInitialFitRef = useRef(false);
+  // Current data for the once-registered style.load link redraw, so the
+  // setStyle effect can depend only on the actual style inputs (theme /
+  // basemap) and NOT on `instances`/`destinations` — otherwise placing a
+  // sign would re-run setStyle and reload the whole style (a flash).
+  const instancesRef = useRef(instances);
+  instancesRef.current = instances;
+  const destinationsRef = useRef(destinations);
+  destinationsRef.current = destinations;
+
   // Monotonic counter incremented when a fresh map is ready to host
   // markers. The destination-markers effect depends on this so it runs
   // once per map lifetime (not on every React render), and doesn't try
@@ -228,15 +247,15 @@ export function MapOverview({
       saveMapPos(c.lng, c.lat, map.getZoom());
     });
 
-    // Global callbacks for popup buttons
+    // Global callbacks for popup buttons. The map is created once, so read
+    // the live onSelect via a ref (a captured `onSelectSign` would go stale)
+    // and look up markers in the shared `signMarkersRef` (synced separately).
     (window as any).__signalGoTo = (id: string) => {
-      onSelectSign(id);
+      onSelectRef.current(id);
     };
 
-    // Marker lookup for move mode
-    const markerMap: Record<string, any> = {};
     (window as any).__signalMoveSign = (id: string) => {
-      const marker = markerMap[id];
+      const marker = signMarkersRef.current[id];
       if (!marker) return;
       marker.setDraggable(true);
       marker.getElement().style.cursor = 'grab';
@@ -278,113 +297,11 @@ export function MapOverview({
       // navigation context. (See `lib/mapLabels.ts`.)
       hideOsmLabels(map);
 
-      const bounds = new maplibregl.LngLatBounds();
-
-      for (const inst of instances) {
-        if (!inst.lat || !inst.lng) continue;
-        bounds.extend([inst.lng, inst.lat]);
-
-        // Sign marker — plain colored dot, color-coded by review
-        // status. Phase 5c attempted facing rotation here; reverted
-        // because two iterations produced either oversized vector
-        // arrows or invisible markers. The Compass icon next to the
-        // FACING dial is the directional feedback affordance; the
-        // map's job is location only.
-        //
-        // statusColor() returns 'transparent' for pending — fine when
-        // it was used as a glow accent on a Signal-blue em-dash, but
-        // here the colour IS the dot's body. Fall back to a neutral
-        // grey (SignCard's default) so pending dots stay visible.
-        const dotColor =
-          statusColor(inst.reviewStatus) === 'transparent'
-            ? '#3A3A3E'
-            : statusColor(inst.reviewStatus);
-        // Wrapper holds the colored dot + a sign-code label so
-        // reviewers can scan the campus map and identify each sign
-        // without clicking. Anchor is set to 'left' on the marker
-        // below so the dot (which sits at the wrapper's left edge,
-        // shifted half its width with margin so its centre is the
-        // anchor) coincides with the lat/lng. Label flows to the
-        // right with a small gap.
-        const wrap = document.createElement('div');
-        wrap.className = 'sign-marker-wrap';
-        wrap.style.cursor = 'pointer';
-
-        const dot = document.createElement('div');
-        dot.className = 'sign-marker';
-        dot.style.background = dotColor;
-        wrap.appendChild(dot);
-
-        const label = document.createElement('span');
-        label.className = 'sign-marker-label';
-        // CU Boulder seed format: cu-bldr-sign-{CODE}-{NUM}. The
-        // user-meaningful slice is everything after `cu-bldr-sign-`.
-        // Other id formats fall back to the raw id.
-        label.textContent = inst.id.startsWith('cu-bldr-sign-')
-          ? inst.id.slice('cu-bldr-sign-'.length)
-          : inst.id;
-        wrap.appendChild(label);
-
-        const el = wrap;
-
-        const st = signTypes[inst.signTypeId];
-        const destList = inst.sides
-          .flatMap((s) => s.destinations)
-          .slice(0, 4)
-          .map((d) => d.name)
-          .join('<br>');
-        const moreCount = inst.sides.flatMap((s) => s.destinations).length - 4;
-
-        const popupHtml = `
-          <div style="padding:.75rem 1rem;min-width:200px;font-family:'IBM Plex Sans',sans-serif;">
-            <div style="font-size:20px;font-weight:300;margin-bottom:2px">${inst.id}</div>
-            <div style="font-size:12px;color:#8E8E93;margin-bottom:8px">
-              ${inst.neighborhood || ''} · ${st?.name || st?.code || ''}
-            </div>
-            <div style="font-size:12px;color:#8E8E93;line-height:1.7;margin-bottom:8px">
-              ${destList}${moreCount > 0 ? `<div style="font-size:11px;color:#8E8E93">+${moreCount} more</div>` : ''}
-            </div>
-            <div style="display:flex;gap:6px">
-              <button onclick="window.__signalGoTo && window.__signalGoTo('${inst.id}')" style="
-                flex:1;padding:7px;
-                background:rgba(116,135,145,.1);border:1px solid rgba(116,135,145,.3);
-                border-radius:4px;color:#748791;font-family:'IBM Plex Mono',monospace;
-                font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-                cursor:pointer;text-align:center;
-              ">Review →</button>
-              <button onclick="window.__signalMoveSign && window.__signalMoveSign('${inst.id}')" style="
-                padding:7px 10px;
-                background:rgba(173,223,247,.08);border:1px solid rgba(173,223,247,.25);
-                border-radius:4px;color:#ADDFF7;font-family:'IBM Plex Mono',monospace;
-                font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-                cursor:pointer;text-align:center;
-              ">Move</button>
-            </div>
-          </div>
-        `;
-
-        const popup = new maplibregl.Popup({
-          closeButton: false,
-          maxWidth: '240px',
-          className: 'cu-popup',
-        }).setHTML(popupHtml);
-
-        const marker = new maplibregl.Marker({ element: el, anchor: 'left' })
-          .setLngLat([inst.lng, inst.lat])
-          .setPopup(popup)
-          .addTo(map);
-        markerMap[inst.id] = marker;
-      }
-
-      // Fit-to-all-signs ONLY on first load (no saved camera position).
-      // This effect rebuilds the map whenever `instances` changes, so
-      // placing a sign used to animate a fit-to-all-signs zoom every time —
-      // distracting. `moveend` persists the camera (including the initial
-      // fit) via saveMapPos, so once a position exists we respect it and
-      // skip the auto-zoom. The user can still pan/zoom freely.
-      if (!bounds.isEmpty() && !saved) {
-        map.fitBounds(bounds, { padding: 40 });
-      }
+      // Sign markers + the initial fit are handled by the dedicated
+      // sign-marker sync effect below (keyed on `mapReady` + `instances`),
+      // so the map is created ONCE and placing a sign re-syncs markers on
+      // this live map instead of recreating it (which re-fetched tiles and
+      // flashed). `setMapReady` triggers that effect.
 
       // Draw destination links if the toggle is already on
       if (showLinksRef.current) {
@@ -410,15 +327,21 @@ export function MapOverview({
         }
       }
       destMarkersRef.current.clear();
+      // Sign markers are attached to this map too — clear the ref so a
+      // remount re-syncs onto the fresh map instance.
+      signMarkersRef.current = {};
+      didInitialFitRef.current = false;
       map.remove();
       mlMapRef.current = null;
     };
-    // Phase 5c follow-up: `isDark` is intentionally NOT in this dep
-    // list. Theme changes hot-swap the style via `map.setStyle` in
-    // the sibling effect below — recreating the maplibre map every
-    // time the user toggles the theme would re-fetch tiles, rebuild
-    // 118 markers, and lose any in-progress popup state.
-  }, [instances, signTypes, onSelectSign]);
+    // Create the map ONCE. `isDark`/`basemapId` are handled by the
+    // setStyle sibling effect; `instances`/`signTypes`/`onSelectSign` are
+    // handled by the sign-marker sync effect (markers) + links effect, all
+    // operating on this live map. Keeping creation out of those deps is what
+    // stops the tile-reload flash on sign placement (recreating the map per
+    // `instances` change re-fetched tiles + rebuilt every marker).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Phase 5c follow-up: hot-swap tile style on theme change ─────────────
   //
@@ -438,9 +361,11 @@ export function MapOverview({
       // and street labels stay visible).
       hideOsmLabels(map);
       // Re-apply the all-destinations link layer if it was visible
-      // before the style swap.
+      // before the style swap. Read current data via refs so this effect
+      // need not depend on instances/destinations (which would re-run
+      // setStyle on every placement — a flash).
       if (showLinksRef.current) {
-        drawAllLinks(map, instances, destinations);
+        drawAllLinks(map, instancesRef.current, destinationsRef.current);
       }
     };
     map.once('style.load', onStyleLoad);
@@ -448,7 +373,7 @@ export function MapOverview({
     return () => {
       map.off('style.load', onStyleLoad);
     };
-  }, [isDark, basemapId, instances, destinations]);
+  }, [isDark, basemapId]);
 
   // ── Destination markers — create / update / remove diff ─────────────────
   //
@@ -547,6 +472,121 @@ export function MapOverview({
       destMarkersRef.current.set(dest.id, marker);
     }
   }, [mapReady, destinations]);
+
+  // ── Sign markers — re-synced on the LIVE map (no map recreate) ──────────
+  //
+  // Runs when the sign list changes or a fresh map is ready. Mirrors the
+  // destination-marker effect above: rebuilding markers here (rather than
+  // recreating the whole map on every `instances` change) is what removes
+  // the tile-reload flash when placing a sign. Markers are tracked in
+  // `signMarkersRef` so `__signalMoveSign` can find them and so this effect
+  // can clear the previous batch before re-adding.
+  useEffect(() => {
+    if (!mapReady) return;
+    const map = mlMapRef.current;
+    const maplibregl = (window as any).maplibregl;
+    if (!map || !maplibregl) return;
+
+    // Full rebuild: drop the previous batch, re-add from current instances.
+    for (const id of Object.keys(signMarkersRef.current)) {
+      try {
+        signMarkersRef.current[id].remove();
+      } catch {
+        /* marker already detached — best-effort cleanup */
+      }
+    }
+    signMarkersRef.current = {};
+
+    const bounds = new maplibregl.LngLatBounds();
+
+    for (const inst of instances) {
+      if (!inst.lat || !inst.lng) continue;
+      bounds.extend([inst.lng, inst.lat]);
+
+      // Sign marker — plain colored dot, color-coded by review status.
+      // statusColor() returns 'transparent' for pending; fall back to a
+      // neutral grey so pending dots stay visible (the colour IS the body).
+      const dotColor =
+        statusColor(inst.reviewStatus) === 'transparent'
+          ? '#3A3A3E'
+          : statusColor(inst.reviewStatus);
+      const wrap = document.createElement('div');
+      wrap.className = 'sign-marker-wrap';
+      wrap.style.cursor = 'pointer';
+
+      const dot = document.createElement('div');
+      dot.className = 'sign-marker';
+      dot.style.background = dotColor;
+      wrap.appendChild(dot);
+
+      const label = document.createElement('span');
+      label.className = 'sign-marker-label';
+      // CU Boulder seed format: cu-bldr-sign-{CODE}-{NUM}. The
+      // user-meaningful slice is everything after `cu-bldr-sign-`.
+      label.textContent = inst.id.startsWith('cu-bldr-sign-')
+        ? inst.id.slice('cu-bldr-sign-'.length)
+        : inst.id;
+      wrap.appendChild(label);
+
+      const el = wrap;
+
+      const st = signTypes[inst.signTypeId];
+      const destList = inst.sides
+        .flatMap((s) => s.destinations)
+        .slice(0, 4)
+        .map((d) => d.name)
+        .join('<br>');
+      const moreCount = inst.sides.flatMap((s) => s.destinations).length - 4;
+
+      const popupHtml = `
+          <div style="padding:.75rem 1rem;min-width:200px;font-family:'IBM Plex Sans',sans-serif;">
+            <div style="font-size:20px;font-weight:300;margin-bottom:2px">${inst.id}</div>
+            <div style="font-size:12px;color:#8E8E93;margin-bottom:8px">
+              ${inst.neighborhood || ''} · ${st?.name || st?.code || ''}
+            </div>
+            <div style="font-size:12px;color:#8E8E93;line-height:1.7;margin-bottom:8px">
+              ${destList}${moreCount > 0 ? `<div style="font-size:11px;color:#8E8E93">+${moreCount} more</div>` : ''}
+            </div>
+            <div style="display:flex;gap:6px">
+              <button onclick="window.__signalGoTo && window.__signalGoTo('${inst.id}')" style="
+                flex:1;padding:7px;
+                background:rgba(116,135,145,.1);border:1px solid rgba(116,135,145,.3);
+                border-radius:4px;color:#748791;font-family:'IBM Plex Mono',monospace;
+                font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+                cursor:pointer;text-align:center;
+              ">Review →</button>
+              <button onclick="window.__signalMoveSign && window.__signalMoveSign('${inst.id}')" style="
+                padding:7px 10px;
+                background:rgba(173,223,247,.08);border:1px solid rgba(173,223,247,.25);
+                border-radius:4px;color:#ADDFF7;font-family:'IBM Plex Mono',monospace;
+                font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+                cursor:pointer;text-align:center;
+              ">Move</button>
+            </div>
+          </div>
+        `;
+
+      const popup = new maplibregl.Popup({
+        closeButton: false,
+        maxWidth: '240px',
+        className: 'cu-popup',
+      }).setHTML(popupHtml);
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'left' })
+        .setLngLat([inst.lng, inst.lat])
+        .setPopup(popup)
+        .addTo(map);
+      signMarkersRef.current[inst.id] = marker;
+    }
+
+    // Fit-to-all-signs ONCE — first run only, and only when the user has no
+    // saved camera. moveend persists the camera (incl. this fit), so later
+    // placements respect the user's position instead of zoom-bouncing.
+    if (!didInitialFitRef.current && !bounds.isEmpty() && !loadMapPos()) {
+      map.fitBounds(bounds, { padding: 40 });
+    }
+    didInitialFitRef.current = true;
+  }, [mapReady, instances, signTypes]);
 
   // Ghost preview marker — shown on click before confirming placement
   useEffect(() => {
