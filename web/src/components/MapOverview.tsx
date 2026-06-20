@@ -376,7 +376,13 @@ export function MapOverview({
         markerMap[inst.id] = marker;
       }
 
-      if (!bounds.isEmpty()) {
+      // Fit-to-all-signs ONLY on first load (no saved camera position).
+      // This effect rebuilds the map whenever `instances` changes, so
+      // placing a sign used to animate a fit-to-all-signs zoom every time —
+      // distracting. `moveend` persists the camera (including the initial
+      // fit) via saveMapPos, so once a position exists we respect it and
+      // skip the auto-zoom. The user can still pan/zoom freely.
+      if (!bounds.isEmpty() && !saved) {
         map.fitBounds(bounds, { padding: 40 });
       }
 
